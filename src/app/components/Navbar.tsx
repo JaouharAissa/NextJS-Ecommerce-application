@@ -38,41 +38,41 @@ export default function Navbar({ links }: NavbarProps) {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 text-white shadow-2xl backdrop-blur">
+    <nav className="sticky top-0 z-40 glass-nav">
       <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/15">
+        <Link href="/" className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-white">
+          <span className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-white/10 border border-white/15 shadow-lg">
             <Sparkles size={22} />
           </span>
           ShopStyle
         </Link>
 
         {/* Menu Desktop */}
-        <div className="hidden md:flex items-center space-x-6">
+        <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-100">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-blue-50 text-sm font-medium">
+            <Link key={link.href} href={link.href} className="hover:text-white transition-colors">
               {link.name}
             </Link>
           ))}
           {isAuthenticated && role !== "admin" && (
-            <Link href="/mes-commandes" className="flex items-center gap-2 hover:text-blue-50 text-sm font-medium">
+            <Link href="/mes-commandes" className="flex items-center gap-2 hover:text-white transition-colors">
               <ListOrdered size={16} />
               Mes commandes
             </Link>
           )}
           {role === "admin" && (
-            <Link href="/dashboard" className="flex items-center gap-2 hover:text-blue-50 text-sm font-medium">
+            <Link href="/dashboard" className="flex items-center gap-2 hover:text-white transition-colors">
               <LayoutDashboard size={16} />
               Dashboard
             </Link>
           )}
           {role === "admin" && (
-            <Link href="/commentaires" className="hover:text-blue-50 text-sm font-medium">
+            <Link href="/commentaires" className="hover:text-white transition-colors">
               Commentaires
             </Link>
           )}
           {role === "admin" && (
-            <Link href="/commandes" className="hover:text-blue-50 text-sm font-medium">
+            <Link href="/commandes" className="hover:text-white transition-colors">
               Commandes admin
             </Link>
           )}
@@ -80,7 +80,7 @@ export default function Navbar({ links }: NavbarProps) {
           {isAuthenticated ? (
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-white text-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 transition"
+              className="flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 transition shadow-lg"
             >
               <LogOut size={16} />
               Déconnexion
@@ -88,7 +88,7 @@ export default function Navbar({ links }: NavbarProps) {
           ) : (
             <Link
               href="/login"
-              className="bg-white text-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 transition"
+              className="bg-white text-blue-700 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 transition shadow-lg"
             >
               Connexion
             </Link>
@@ -107,7 +107,7 @@ export default function Navbar({ links }: NavbarProps) {
 
       {/* Menu mobile */}
       {isOpen && (
-        <div className="md:hidden bg-blue-500/95 px-4 pb-4 space-y-2 border-t border-white/10">
+        <div className="md:hidden bg-slate-900/90 px-4 pb-4 space-y-2 border-t border-white/10 text-slate-100">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -158,14 +158,14 @@ export default function Navbar({ links }: NavbarProps) {
           {isAuthenticated ? (
             <button
               onClick={handleLogout}
-              className="w-full bg-white text-blue-600 px-3 py-2 rounded-full text-sm font-semibold"
+              className="w-full bg-white text-blue-700 px-3 py-2 rounded-full text-sm font-semibold shadow-md"
             >
               Déconnexion
             </button>
           ) : (
             <Link
               href="/login"
-              className="block bg-white text-blue-600 px-3 py-2 rounded-full text-center font-semibold"
+              className="block bg-white text-blue-700 px-3 py-2 rounded-full text-center font-semibold shadow-md"
               onClick={() => setIsOpen(false)}
             >
               Connexion

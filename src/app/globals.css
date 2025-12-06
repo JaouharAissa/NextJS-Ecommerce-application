@@ -2,18 +2,19 @@
 @import "tailwindcss";
 
 :root {
-  /* Modern Glassmorphism Color Palette */
-  --primary-blue: #3b82f6;
-  --primary-blue-dark: #2563eb;
-  --accent-purple: #8b5cf6;
+  /* Modern Aurora Palette */
+  --primary-blue: #2563eb;
+  --primary-blue-dark: #1d4ed8;
+  --accent-purple: #7c3aed;
   --accent-pink: #ec4899;
-  --glass-white: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.18);
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
+  --accent-emerald: #10b981;
+  --glass-white: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
   --text-muted: #94a3b8;
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #0b1224;
+  --foreground: #f8fafc;
 
   /* Spacing System */
   --spacing-xs: 0.5rem;
@@ -24,8 +25,8 @@
   --spacing-2xl: 4rem;
 
   /* Glass Effects */
-  --glass-blur: 16px;
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --glass-blur: 18px;
+  --glass-shadow: 0 18px 60px rgba(15, 23, 42, 0.3);
 }
 
 @theme inline {
@@ -43,9 +44,11 @@
 }
 
 body {
-  background: #f8fafc;
-  background-attachment: fixed;
-  color: var(--text-primary);
+  background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.12), transparent 28%),
+    radial-gradient(circle at 80% 10%, rgba(124, 58, 237, 0.12), transparent 25%),
+    radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.12), transparent 35%),
+    linear-gradient(145deg, #0b1224, #0f172a 40%, #0b1224 70%, #0f172a);
+  color: var(--foreground);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 16px;
   line-height: 1.6;
@@ -145,42 +148,45 @@ html {
 
 /* Glassmorphism Classes */
 .glass {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .glass-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  border-radius: 1rem;
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--glass-shadow);
+  border-radius: 1.25rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+  border-color: rgba(255, 255, 255, 0.24);
+  transform: translateY(-4px);
 }
 
 .glass-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  background: rgba(15, 23, 42, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--glass-shadow);
 }
 
 .glass-button {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(124, 58, 237, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--foreground);
   transition: all 0.2s ease;
 }
 
 .glass-button:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(124, 58, 237, 0.25));
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
 }
 
 /* Animations */
@@ -292,23 +298,23 @@ html {
 
 /* Button Styles */
 .btn-primary {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
   color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  letter-spacing: 0.025em;
+  padding: 0.85rem 1.6rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
   transition: all 0.2s ease;
   border: none;
   cursor: pointer;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 35px rgba(37, 99, 235, 0.35);
 }
 
 .btn-primary:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, #1d4ed8, #6d28d9);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 16px 45px rgba(37, 99, 235, 0.45);
 }
 
 .btn-primary:active {
@@ -334,18 +340,18 @@ html {
 
 /* Card Styles */
 .card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 1.25rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border-radius: 1.3rem;
   padding: var(--spacing-lg);
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.3s ease;
+  box-shadow: var(--glass-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.35s ease;
 }
 
 .card:hover {
-  box-shadow: 0 16px 48px rgba(31, 38, 135, 0.15);
-  transform: translateY(-4px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+  transform: translateY(-6px);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Input Styles */
@@ -461,12 +467,26 @@ img {
 
 /* Modern Background Patterns */
 .bg-pattern {
-  background: #f8fafc;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.05) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+  background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.18), transparent 28%),
+    radial-gradient(circle at 80% 0%, rgba(124, 58, 237, 0.15), transparent 26%),
+    radial-gradient(circle at 12% 80%, rgba(16, 185, 129, 0.14), transparent 30%),
+    radial-gradient(circle at 90% 70%, rgba(236, 72, 153, 0.16), transparent 32%),
+    #0b1224;
+}
+
+.surface-panel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  box-shadow: var(--glass-shadow);
+}
+
+.section-shell {
+  padding: 4rem 0;
+}
+
+.section-shell--compact {
+  padding: 2.5rem 0;
 }
 
 /* Spacing Utilities */
