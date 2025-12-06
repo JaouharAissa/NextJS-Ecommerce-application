@@ -10,10 +10,10 @@ import {
   ClipboardList,
   MessageSquare,
   LogOut,
-  Shield,
   Menu,
   X,
 } from "lucide-react";
+import LogoMark from "./LogoMark";
 
 const adminLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -53,28 +53,22 @@ export default function AdminNavbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 glass-nav">
       <div className="container-main">
         <div className="flex items-center justify-between h-16 lg:h-20">
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600">
-              <Shield className="text-white" size={22} />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</span>
-              <span className="text-lg font-bold text-gray-900">ShopStyle</span>
-            </div>
+            <LogoMark size="sm" className="shadow-lg" />
           </Link>
 
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2 text-white">
             {adminLinks.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors border border-white/10 ${
                   isActive(pathname, href)
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-white/20 text-white shadow-md"
+                    : "text-slate-100 hover:bg-white/10"
                 }`}
               >
                 <Icon size={18} />
@@ -84,10 +78,10 @@ export default function AdminNavbar() {
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
-            <span className="text-sm text-gray-600">Admin</span>
+            <span className="text-sm text-slate-100">Admin</span>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-lg"
             >
               <LogOut size={16} />
               Déconnexion
@@ -95,7 +89,7 @@ export default function AdminNavbar() {
           </div>
 
           <button
-            className="lg:hidden text-gray-700 p-2"
+            className="lg:hidden text-white p-2 border border-white/15 rounded-xl bg-white/10"
             onClick={() => setOpen(!open)}
             aria-label="Ouvrir le menu admin"
           >
@@ -104,16 +98,16 @@ export default function AdminNavbar() {
         </div>
 
         {open && (
-          <div className="lg:hidden border-t border-gray-200 bg-white">
+          <div className="lg:hidden border-t border-white/10 bg-slate-900/60 backdrop-blur">
             <div className="px-4 py-4 space-y-2">
               {adminLinks.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors border border-white/10 ${
                     isActive(pathname, href)
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-white/20 text-white"
+                      : "text-slate-100 hover:bg-white/10"
                   }`}
                   onClick={() => setOpen(false)}
                 >
@@ -126,7 +120,7 @@ export default function AdminNavbar() {
                   setOpen(false);
                   handleLogout();
                 }}
-                className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg text-sm font-semibold transition-colors mt-2"
+                className="w-full flex items-center justify-center gap-2 bg-white text-blue-700 px-4 py-3 rounded-lg text-sm font-semibold transition-colors mt-2"
               >
                 <LogOut size={16} />
                 Déconnexion
