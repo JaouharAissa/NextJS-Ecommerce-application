@@ -1,9 +1,8 @@
-// app/home/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Heart, Star, Search, LogOut, X, Plus, Minus, Filter } from "lucide-react";
+import { ShoppingCart, Heart, Star, Search, LogOut, X, Plus, Minus, Filter, Package, Sparkles } from "lucide-react";
 
 interface Product {
   _id: string;
@@ -351,67 +350,8 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-
-          {/* Search Bar - Mobile */}
-          <div className="md:hidden pb-4 pt-2">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="Rechercher un produit..."
-                className="w-full pl-11 pr-4 py-2.5 border border-white/20 rounded-xl bg-white/5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-white placeholder:text-slate-300"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
         </div>
       </header>
-
-      {/* Category Filter & Sort */}
-      <div className="bg-slate-900/80 border-b border-white/10 sticky top-20 z-40 shadow-lg backdrop-blur">
-        <div className="container-main py-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Categories */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
-              <Filter size={18} className="text-slate-300 flex-shrink-0" />
-              <button
-                onClick={() => setSelectedCategory("all")}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all font-medium text-sm ${selectedCategory === "all"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white/10 text-white hover:bg-white/20 border border-white/10"
-                  }`}
-              >
-                Tous
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat._id}
-                  onClick={() => setSelectedCategory(cat._id)}
-                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all font-medium text-sm ${selectedCategory === cat._id
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white/10 text-white hover:bg-white/20 border border-white/10"
-                    }`}
-                >
-                  {cat.nom}
-                </button>
-              ))}
-            </div>
-
-            {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-4 py-2 border border-white/20 rounded-lg bg-white/5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm font-medium text-white cursor-pointer"
-            >
-              <option value="default">Trier par</option>
-              <option value="price-asc">Prix croissant</option>
-              <option value="price-desc">Prix décroissant</option>
-              <option value="rating">Mieux notés</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Products Grid */}
       <main className="container-main py-8 lg:py-12">
@@ -585,7 +525,7 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {                  cartItems.map((item) => (
+                  {cartItems.map((item) => (
                     <div key={item.produitId} className="glass-card p-5 flex gap-4 hover-lift rounded-xl">
                       {item.image ? (
                         <img

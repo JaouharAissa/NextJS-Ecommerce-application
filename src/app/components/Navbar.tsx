@@ -38,41 +38,51 @@ export default function Navbar({ links }: NavbarProps) {
   };
 
   return (
-    <nav className="sticky top-0 z-40 glass-nav">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-white">
-          <span className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-white/10 border border-white/15 shadow-lg">
+    <nav className="sticky top-0 z-50 glass-nav">
+      <div className="container-main py-3 md:py-4 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-3 text-xl md:text-2xl font-semibold tracking-tight text-white">
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-white/10 border border-white/15 shadow-lg">
             <Sparkles size={22} />
           </span>
           ShopStyle
         </Link>
 
         {/* Menu Desktop */}
-        <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-100">
+        <div className="hidden md:flex items-center space-x-4 text-sm text-slate-100">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-white transition-colors">
+            <Link
+              key={link.href}
+              href={link.href}
+              className="px-3 py-2 rounded-full hover:bg-white/10 transition font-medium"
+            >
               {link.name}
             </Link>
           ))}
           {isAuthenticated && role !== "admin" && (
-            <Link href="/mes-commandes" className="flex items-center gap-2 hover:text-white transition-colors">
+            <Link
+              href="/mes-commandes"
+              className="px-3 py-2 rounded-full hover:bg-white/10 transition font-medium flex items-center gap-2"
+            >
               <ListOrdered size={16} />
               Mes commandes
             </Link>
           )}
           {role === "admin" && (
-            <Link href="/dashboard" className="flex items-center gap-2 hover:text-white transition-colors">
+            <Link
+              href="/dashboard"
+              className="px-3 py-2 rounded-full hover:bg-white/10 transition font-medium flex items-center gap-2"
+            >
               <LayoutDashboard size={16} />
               Dashboard
             </Link>
           )}
           {role === "admin" && (
-            <Link href="/commentaires" className="hover:text-white transition-colors">
+            <Link href="/commentaires" className="px-3 py-2 rounded-full hover:bg-white/10 transition font-medium">
               Commentaires
             </Link>
           )}
           {role === "admin" && (
-            <Link href="/commandes" className="hover:text-white transition-colors">
+            <Link href="/commandes" className="px-3 py-2 rounded-full hover:bg-white/10 transition font-medium">
               Commandes admin
             </Link>
           )}
@@ -80,7 +90,7 @@ export default function Navbar({ links }: NavbarProps) {
           {isAuthenticated ? (
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 transition shadow-lg"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-blue-700 font-semibold shadow-lg hover:-translate-y-0.5 transition"
             >
               <LogOut size={16} />
               Déconnexion
@@ -88,31 +98,29 @@ export default function Navbar({ links }: NavbarProps) {
           ) : (
             <Link
               href="/login"
-              className="bg-white text-blue-700 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 transition shadow-lg"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-blue-700 font-semibold shadow-lg hover:-translate-y-0.5 transition"
             >
               Connexion
             </Link>
           )}
         </div>
 
-        {/* Bouton menu mobile */}
         <button
-          className="md:hidden text-white"
+          className="md:hidden inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 p-2 text-white"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Menu mobile"
         >
-          {isOpen ? <X size={28} /> : <Menu size={28} />}
+          {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {/* Menu mobile */}
       {isOpen && (
-        <div className="md:hidden bg-slate-900/90 px-4 pb-4 space-y-2 border-t border-white/10 text-slate-100">
+        <div className="md:hidden bg-gradient-to-b from-slate-900/90 to-slate-900/80 px-4 pb-4 space-y-2 border-t border-white/10">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="block py-2 text-sm font-medium"
+              className="block py-2 text-sm font-medium text-white/90 hover:text-white"
               onClick={() => setIsOpen(false)}
             >
               {link.name}
@@ -121,7 +129,7 @@ export default function Navbar({ links }: NavbarProps) {
           {isAuthenticated && role !== "admin" && (
             <Link
               href="/mes-commandes"
-              className="block py-2 text-sm font-medium"
+              className="block py-2 text-sm font-medium text-white/90 hover:text-white"
               onClick={() => setIsOpen(false)}
             >
               Mes commandes
@@ -130,7 +138,7 @@ export default function Navbar({ links }: NavbarProps) {
           {role === "admin" && (
             <Link
               href="/dashboard"
-              className="block py-2 text-sm font-medium"
+              className="block py-2 text-sm font-medium text-white/90 hover:text-white"
               onClick={() => setIsOpen(false)}
             >
               Dashboard
@@ -139,7 +147,7 @@ export default function Navbar({ links }: NavbarProps) {
           {role === "admin" && (
             <Link
               href="/commentaires"
-              className="block py-2 text-sm font-medium"
+              className="block py-2 text-sm font-medium text-white/90 hover:text-white"
               onClick={() => setIsOpen(false)}
             >
               Commentaires
@@ -148,7 +156,7 @@ export default function Navbar({ links }: NavbarProps) {
           {role === "admin" && (
             <Link
               href="/commandes"
-              className="block py-2 text-sm font-medium"
+              className="block py-2 text-sm font-medium text-white/90 hover:text-white"
               onClick={() => setIsOpen(false)}
             >
               Commandes admin
@@ -158,14 +166,14 @@ export default function Navbar({ links }: NavbarProps) {
           {isAuthenticated ? (
             <button
               onClick={handleLogout}
-              className="w-full bg-white text-blue-700 px-3 py-2 rounded-full text-sm font-semibold shadow-md"
+              className="w-full bg-white text-blue-700 px-3 py-2 rounded-full text-sm font-semibold"
             >
               Déconnexion
             </button>
           ) : (
             <Link
               href="/login"
-              className="block bg-white text-blue-700 px-3 py-2 rounded-full text-center font-semibold shadow-md"
+              className="block bg-white text-blue-700 px-3 py-2 rounded-full text-center font-semibold"
               onClick={() => setIsOpen(false)}
             >
               Connexion

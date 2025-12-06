@@ -35,8 +35,10 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {!hideNavbar && <Navbar links={links} />}
-        {children}
+        <div className="page-shell">
+          {!hideNavbar && <Navbar links={links} />}
+          <main className="relative z-10">{children}</main>
+        </div>
       </body>
     </html>
   );
