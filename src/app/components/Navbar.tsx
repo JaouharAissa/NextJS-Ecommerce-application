@@ -47,6 +47,7 @@ export default function Navbar({ links }: NavbarProps) {
           ShopStyle
         </Link>
 
+        {/* Menu Desktop */}
         <div className="hidden md:flex items-center space-x-4 text-sm text-slate-100">
           {links.map((link) => (
             <Link
