@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Heart, Star, Search, LogOut, X, Plus, Minus, Filter } from "lucide-react";
+import { ShoppingCart, Heart, Star, Search, LogOut, X, Plus, Minus, Filter, Package, Sparkles } from "lucide-react";
 
 interface Product {
   _id: string;
@@ -279,108 +279,152 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-pattern">
-      {/* Modern Navbar */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="container-main">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo */}
-            <h1
-              className="text-2xl lg:text-3xl font-bold text-blue-600 cursor-pointer"
-              onClick={() => router.push("/home")}
-            >
-              ShopStyle
-            </h1>
-
-            {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-xl mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Rechercher un produit par nom, catégorie ou description..."
-                  className="w-full pl-12 pr-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+      <section className="relative">
+        <div className="container-main pt-10 pb-8 lg:pt-14 lg:pb-12">
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="pill text-xs font-semibold tracking-wide uppercase">ShopStyle</span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1 text-white/80 text-sm">
+                  <Sparkles size={16} />
+                  Nouveautés sélectionnées
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push("/mes-commandes")}
+                  className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 border border-white/10 text-white/90 hover:text-white hover:-translate-y-0.5 transition"
+                >
+                  Mes commandes
+                </button>
+                <button
+                  type="button"
+                  className="relative inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-white/10 border border-white/15 text-white hover:shadow-lg hover:-translate-y-0.5 transition"
+                  onClick={() => setFavoriteItems(favoriteItems.length > 0 ? [] : favoriteItems)}
+                >
+                  <Heart size={20} className={favoriteCount ? "fill-rose-400 text-rose-400" : ""} />
+                  {favoriteCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[11px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                      {favoriteCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="relative inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-white/10 border border-white/15 text-white hover:shadow-lg hover:-translate-y-0.5 transition"
+                  onClick={() => setIsCartOpen(true)}
+                >
+                  <ShoppingCart size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[11px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-blue-700 font-semibold shadow-lg hover:-translate-y-0.5 transition"
+                >
+                  <LogOut size={18} />
+                  <span>Déconnexion</span>
+                </button>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push("/mes-commandes")}
-                className="hidden md:inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-4 py-2"
-              >
-                Mes commandes
-              </button>
+            <div className="grid lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-5">
+                <p className="text-sm uppercase tracking-[0.35em] text-white/60 font-semibold">Votre dressing digital</p>
+                <h1 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight">
+                  Explorez des pièces modernes, sélectionnées pour une expérience fluide.
+                </h1>
+                <p className="text-lg text-white/70 max-w-2xl">
+                  Parcourez les catégories, créez vos favoris et préparez votre panier dans une interface harmonisée.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="glass-button px-4 py-3 rounded-2xl text-left">
+                    <p className="text-sm text-white/60">Produits</p>
+                    <p className="text-2xl font-bold text-white">{products.length}</p>
+                  </div>
+                  <div className="glass-button px-4 py-3 rounded-2xl text-left">
+                    <p className="text-sm text-white/60">Catégories</p>
+                    <p className="text-2xl font-bold text-white">{categories.length}</p>
+                  </div>
+                  <div className="glass-button px-4 py-3 rounded-2xl text-left">
+                    <p className="text-sm text-white/60">Favoris</p>
+                    <p className="text-2xl font-bold text-white">{favoriteCount}</p>
+                  </div>
+                </div>
+              </div>
 
-              <button
-                type="button"
-                className="relative p-2.5 text-gray-700 hover:text-red-500 transition-colors"
-                onClick={() => setFavoriteItems(favoriteItems.length > 0 ? [] : favoriteItems)}
-              >
-                <Heart
-                  size={22}
-                  className={favoriteCount ? "fill-red-500 text-red-500" : ""}
-                />
-                {favoriteCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {favoriteCount}
+              <div className="glass-card p-6 lg:p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <Search size={22} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500">Recherche éclair</p>
+                    <p className="text-xl font-bold text-gray-900">Trouvez la pièce parfaite</p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Rechercher par nom, catégorie ou description..."
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 shadow-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                  <span className="badge-soft">{categories.length} catégories curatées</span>
+                  <span className="badge-soft">
+                    <Package size={16} />
+                    {products.length} références
                   </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                className="relative p-2.5 text-gray-700 hover:text-blue-600 transition-colors"
-                onClick={() => setIsCartOpen(true)}
-              >
-                <ShoppingCart size={22} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {cartCount}
+                  <span className="badge-soft">
+                    <Sparkles size={16} />
+                    Expérience harmonisée
                   </span>
-                )}
-              </button>
+                </div>
 
-              <button
-                onClick={handleLogout}
-                className="hidden md:flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                <LogOut size={18} />
-                <span>Déconnexion</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Search Bar - Mobile */}
-          <div className="md:hidden pb-4 pt-2">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Rechercher un produit..."
-                className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+                <div className="flex flex-wrap gap-3">
+                  {categories.slice(0, 4).map((cat) => (
+                    <button
+                      key={cat._id}
+                      onClick={() => setSelectedCategory(cat._id)}
+                      className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${selectedCategory === cat._id
+                        ? "bg-blue-600 text-white shadow-lg"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                    >
+                      {cat.nom}
+                    </button>
+                  ))}
+                  {categories.length > 4 && (
+                    <span className="px-4 py-2 rounded-full text-sm font-semibold bg-slate-50 text-slate-600 border border-slate-200">
+                      +{categories.length - 4} autres
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Category Filter & Sort */}
-      <div className="bg-white border-b border-gray-200 sticky top-20 z-40 shadow-sm">
-        <div className="container-main py-4">
+      <section className="container-main -mt-4 lg:-mt-6">
+        <div className="section-shell backdrop-blur px-4 py-4 lg:px-6 lg:py-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Categories */}
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
-              <Filter size={18} className="text-gray-500 flex-shrink-0" />
+              <Filter size={18} className="text-white/70 flex-shrink-0" />
               <button
                 onClick={() => setSelectedCategory("all")}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all font-medium text-sm ${selectedCategory === "all"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                className={`px-4 py-2 rounded-full whitespace-nowrap transition-all font-semibold text-sm ${selectedCategory === "all"
+                  ? "bg-white text-blue-700 shadow-lg"
+                  : "bg-white/10 text-white hover:bg-white/20"
                   }`}
               >
                 Tous
@@ -389,9 +433,9 @@ export default function HomePage() {
                 <button
                   key={cat._id}
                   onClick={() => setSelectedCategory(cat._id)}
-                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all font-medium text-sm ${selectedCategory === cat._id
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className={`px-4 py-2 rounded-full whitespace-nowrap transition-all font-semibold text-sm ${selectedCategory === cat._id
+                    ? "bg-white text-blue-700 shadow-lg"
+                    : "bg-white/10 text-white hover:bg-white/20"
                     }`}
                 >
                   {cat.nom}
@@ -399,11 +443,10 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Sort */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium text-gray-700 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-semibold cursor-pointer shadow-sm"
             >
               <option value="default">Trier par</option>
               <option value="price-asc">Prix croissant</option>
@@ -412,8 +455,7 @@ export default function HomePage() {
             </select>
           </div>
         </div>
-      </div>
-
+      </section>
       {/* Products Grid */}
       <main className="container-main py-8 lg:py-12">
         <div className="mb-8">
