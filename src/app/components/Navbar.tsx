@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Sparkles, LogOut, Menu, X, ListOrdered, LayoutDashboard } from "lucide-react";
+import { LogOut, Menu, X, ListOrdered, LayoutDashboard } from "lucide-react";
+import LogoMark from "./LogoMark";
 
 type NavbarProps = {
   readonly links: readonly { readonly name: string; readonly href: string }[];
@@ -41,10 +42,7 @@ export default function Navbar({ links }: NavbarProps) {
     <nav className="sticky top-0 z-50 glass-nav">
       <div className="container-main py-3 md:py-4 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3 text-xl md:text-2xl font-semibold tracking-tight text-white">
-          <span className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-white/10 border border-white/15 shadow-lg">
-            <Sparkles size={22} />
-          </span>
-          ShopStyle
+          <LogoMark size="md" />
         </Link>
 
         {/* Menu Desktop */}
