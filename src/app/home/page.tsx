@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Heart, Star, Search, LogOut, X, Plus, Minus, Filter } from "lucide-react";
+import { ShoppingCart, Heart, Star, Search, LogOut, X, Plus, Minus, Filter, Package } from "lucide-react";
 
 interface Product {
   _id: string;
@@ -278,7 +278,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-pattern">
+    <div className="page-shell bg-pattern">
       {/* Modern Navbar */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="container-main">
