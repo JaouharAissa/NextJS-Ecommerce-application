@@ -4,7 +4,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IProduit extends Document {
   nom: string;
   description: string;
-  image: string;
+  images: string[]; // Changed from single image to array of images
   prix: number;
   score_moyen: number;
   categorie: mongoose.Types.ObjectId;
@@ -13,39 +13,45 @@ export interface IProduit extends Document {
 
 const produitSchema = new Schema<IProduit>(
   {
-    nom: { 
-      type: String, 
+    nom: {
+      type: String,
       required: true,
-      trim: true 
+      trim: true
     },
-    description: { 
-      type: String, 
-      required: true 
+    description: {
+      type: String,
+      required: true
     },
-    image: { 
-      type: String, 
-      required: true 
-    },
-    prix: { 
-      type: Number, 
+    images: {
+      type: [String],
       required: true,
-      min: 0 
+      validate: {
+        validator: function (v: string[]) {
+          return v && v.length >= 1 && v.length <= 5;
+        },
+        message: 'Un produit doit avoir entre 1 et 5 images'
+      }
     },
-    score_moyen: { 
-      type: Number, 
+    prix: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    score_moyen: {
+      type: Number,
       default: 0,
       min: 0,
-      max: 5 
+      max: 5
     },
-    categorie: { 
-      type: Schema.Types.ObjectId, 
+    categorie: {
+      type: Schema.Types.ObjectId,
       ref: "Categorie",
-      required: true 
+      required: true
     },
-    createdBy: { 
-      type: Schema.Types.ObjectId, 
+    createdBy: {
+      type: Schema.Types.ObjectId,
       ref: "User",
-      required: true 
+      required: true
     },
   },
   { timestamps: true }

@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MessageSquare, Star } from "lucide-react";
+import { ArrowLeft, MessageSquare, Star, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ProduitDetail {
   _id: string;
   nom: string;
   description: string;
-  image: string;
+  images: string[];
   prix: number;
   score_moyen: number;
   categorie?: {
@@ -73,6 +73,9 @@ export default function ProductDetailPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
+  // Image gallery state
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -105,8 +108,15 @@ export default function ProductDetailPage() {
       if (!res.ok) {
         throw new Error("Produit introuvable");
       }
-      const data: ProduitDetail = await res.json();
-      setProduct(data);
+      const data: any = await res.json();
+
+      // Handle migration from single image to images array
+      const normalizedProduct: ProduitDetail = {
+        ...data,
+        images: data.images || (data.image ? [data.image] : ["/placeholder.jpg"]),
+      };
+
+      setProduct(normalizedProduct);
     } catch (error) {
       console.error("Error fetching product:", error);
       setFeedback("Impossible de charger le produit.");
@@ -238,10 +248,20 @@ export default function ProductDetailPage() {
 
   const canInteract = useMemo(() => userRole !== "admin", [userRole]);
 
+  const nextImage = () => {
+    if (!product?.images) return;
+    setSelectedImageIndex((prev) => (prev + 1) % product.images.length);
+  };
+
+  const prevImage = () => {
+    if (!product?.images) return;
+    setSelectedImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+  };
+
   if (loading || !product) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600" />
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-black" />
       </div>
     );
   }
@@ -253,7 +273,7 @@ export default function ProductDetailPage() {
           type="button"
           key={index}
           onClick={() => onChange(index)}
-          className="focus:outline-none"
+          className="focus:outline-none hover:scale-110 transition"
         >
           <Star
             size={24}
@@ -264,79 +284,148 @@ export default function ProductDetailPage() {
     </div>
   );
 
+  const productImages = product.images && product.images.length > 0 ? product.images : ["/placeholder.jpg"];
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-pattern pb-16">
+      <div className="container-main py-6 lg:py-8">
         <button
-          className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6"
+          className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6 font-medium transition-colors"
           onClick={() => router.push("/home")}
         >
           <ArrowLeft size={18} className="mr-2" />
           Retour à la boutique
         </button>
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="relative h-80 md:h-full">
-              <img
-                src={product.image || "/placeholder-product.jpg"}
-                alt={product.nom}
-                className="w-full h-full object-cover"
-              />
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Image Gallery */}
+            <div className="p-6">
+              <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-4 group">
+                <img
+                  src={productImages[selectedImageIndex]}
+                  alt={`${product.nom} - Image ${selectedImageIndex + 1}`}
+                  className="w-full h-full object-cover"
+                />
+
+                {/* Navigation Arrows - only show if multiple images */}
+                {productImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+
+                    {/* Image counter */}
+                    <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                      {selectedImageIndex + 1} / {productImages.length}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Thumbnail Gallery */}
+              {productImages.length > 1 && (
+                <div className="grid grid-cols-5 gap-3">
+                  {productImages.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`aspect-square rounded-lg overflow-hidden border-2 transition ${selectedImageIndex === index
+                          ? "border-black"
+                          : "border-gray-200 hover:border-gray-400"
+                        }`}
+                    >
+                      <img
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="p-6 flex flex-col space-y-4">
-              <span className="text-sm uppercase text-blue-500 font-semibold">
-                {product.categorie?.nom || "Produit"}
-              </span>
-              <h1 className="text-3xl font-bold text-gray-900">{product.nom}</h1>
-              <p className="text-gray-600 leading-relaxed">{product.description}</p>
-              <div className="flex items-center space-x-4">
-                <span className="text-3xl font-semibold text-blue-600">{product.prix.toFixed(2)} DT</span>
-                <div className="flex items-center space-x-2">
+
+            {/* Product Info */}
+            <div className="p-8 flex flex-col space-y-6">
+              <div>
+                <span className="text-sm uppercase tracking-wider text-gray-500 font-semibold">
+                  {product.categorie?.nom || "Produit"}
+                </span>
+                <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.nom}</h1>
+                <p className="text-gray-600 leading-relaxed text-lg">{product.description}</p>
+              </div>
+
+              <div className="flex items-center gap-6 py-4 border-y border-gray-200">
+                <div className="flex items-center gap-2">
                   <StarDisplay value={Math.round(product.score_moyen || 0)} />
-                  <span className="text-sm text-gray-500">
-                    ({product.score_moyen?.toFixed(1) || "0.0"} / 5)
+                  <span className="text-sm text-gray-600 font-medium">
+                    {product.score_moyen?.toFixed(1) || "0.0"} / 5
                   </span>
                 </div>
+                <span className="text-sm text-gray-500">
+                  {comments.length} avis
+                </span>
               </div>
+
+              <div className="flex items-baseline gap-3">
+                <span className="text-4xl font-bold text-gray-900">{product.prix.toFixed(2)} DT</span>
+              </div>
+
+              <button
+                onClick={() => router.push("/home")}
+                className="w-full bg-black text-white py-4 rounded-xl font-semibold hover:bg-gray-800 transition text-lg"
+              >
+                Retour à la boutique
+              </button>
             </div>
           </div>
         </div>
 
-        <section className="mt-10 space-y-6">
+        {/* Comments Section */}
+        <section className="mt-12 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-800 flex items-center">
-              <MessageSquare size={22} className="mr-2 text-blue-600" />
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <MessageSquare size={28} className="text-black" />
               Avis des clients
             </h2>
-            <span className="text-sm text-gray-500">{comments.length} commentaire(s)</span>
+            <span className="text-sm text-gray-500 font-medium">{comments.length} commentaire(s)</span>
           </div>
 
           {feedback && (
-            <div className="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-2 rounded">
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-5 py-3 rounded-xl">
               {feedback}
             </div>
           )}
 
           {canInteract && (
-            <div className="bg-white rounded-xl shadow p-5 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">Laisser un avis</h3>
+            <div className="bg-white rounded-2xl shadow-lg p-6 space-y-5 border border-gray-100">
+              <h3 className="text-xl font-semibold text-gray-900">Laisser un avis</h3>
               {renderInteractiveStars(newRating, setNewRating)}
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Partagez votre expérience..."
+                placeholder="Partagez votre expérience avec ce produit..."
                 rows={4}
-                className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-black transition"
               />
               <div className="flex justify-end">
                 <button
                   type="button"
                   disabled={formLoading}
                   onClick={handleCreate}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                  className="bg-black text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-800 transition disabled:bg-gray-400"
                 >
-                  {formLoading ? "Envoi..." : "Publier"}
+                  {formLoading ? "Envoi..." : "Publier mon avis"}
                 </button>
               </div>
             </div>
@@ -344,46 +433,52 @@ export default function ProductDetailPage() {
 
           <div className="space-y-4">
             {comments.length === 0 && (
-              <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-                Aucun commentaire pour le moment. Soyez le premier !
+              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                <MessageSquare size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 text-lg">Aucun commentaire pour le moment.</p>
+                <p className="text-gray-400 text-sm mt-2">Soyez le premier à partager votre avis !</p>
               </div>
             )}
             {comments.map((comment) => {
               const isOwner = comment.utilisateur?._id === userId;
               const canDelete = isOwner || userRole === "admin";
               return (
-                <div key={comment._id} className="bg-white rounded-lg shadow p-5 space-y-3">
-                  <div className="flex items-center justify-between">
+                <div key={comment._id} className="bg-white rounded-2xl shadow-lg p-6 space-y-4 border border-gray-100">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-semibold text-gray-800">
+                      <p className="font-semibold text-gray-900 text-lg">
                         {comment.utilisateur?.username || "Utilisateur"}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(comment.createdAt).toLocaleString("fr-FR")}
+                      <p className="text-sm text-gray-500">
+                        {new Date(comment.createdAt).toLocaleDateString("fr-FR", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
                       </p>
                     </div>
                     {editingId !== comment._id && <StarDisplay value={comment.note} />}
                   </div>
 
                   {editingId === comment._id ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {renderInteractiveStars(editingRating, setEditingRating)}
                       <textarea
                         value={editingContent}
                         onChange={(e) => setEditingContent(e.target.value)}
                         rows={3}
-                        className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-black focus:outline-none"
                       />
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex gap-3 justify-end">
                         <button
                           onClick={cancelEdit}
-                          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+                          className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
                         >
                           Annuler
                         </button>
                         <button
                           onClick={submitEdit}
-                          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                          className="px-6 py-2.5 rounded-xl bg-black text-white font-medium hover:bg-gray-800 transition"
                           disabled={formLoading}
                         >
                           Enregistrer
@@ -392,13 +487,13 @@ export default function ProductDetailPage() {
                     </div>
                   ) : (
                     <>
-                      <p className="text-gray-700 leading-relaxed">{comment.contenu}</p>
+                      <p className="text-gray-700 leading-relaxed text-base">{comment.contenu}</p>
                       {(isOwner || canDelete) && (
-                        <div className="flex gap-2 justify-end text-sm">
+                        <div className="flex gap-3 justify-end text-sm pt-2 border-t border-gray-100">
                           {isOwner && (
                             <button
                               onClick={() => startEdit(comment)}
-                              className="px-3 py-1 rounded border border-blue-100 text-blue-600 hover:bg-blue-50"
+                              className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition"
                             >
                               Modifier
                             </button>
@@ -406,7 +501,7 @@ export default function ProductDetailPage() {
                           {canDelete && (
                             <button
                               onClick={() => handleDelete(comment._id)}
-                              className="px-3 py-1 rounded border border-red-100 text-red-600 hover:bg-red-50"
+                              className="px-4 py-2 rounded-lg border border-red-200 text-red-600 font-medium hover:bg-red-50 transition"
                             >
                               Supprimer
                             </button>
@@ -424,4 +519,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-

@@ -122,57 +122,66 @@ export default function MesCommandesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Package className="text-blue-600" size={32} />
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-800">Mes commandes</h1>
-              <p className="text-sm text-gray-500">Suivez l'avancement de vos achats</p>
+    <div className="min-h-screen bg-pattern">
+      <header className="glass-nav sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center gap-4">
+              <div className="p-3 glass-button rounded-xl">
+                <Package className="text-blue-600" size={28} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Mes commandes</h1>
+                <p className="text-sm text-gray-600">Suivez l'avancement de vos achats</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.push("/home")}
-              className="px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-100"
-            >
-              ← Retour à la boutique
-            </button>
-            <button
-              onClick={fetchCommandes}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <RefreshCw size={16} />
-              Actualiser
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push("/home")}
+                className="px-4 py-2 text-sm glass-button rounded-xl font-medium text-gray-700 hover:text-blue-600 transition-all"
+              >
+                ← Retour boutique
+              </button>
+              <button
+                onClick={fetchCommandes}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm btn-primary rounded-xl"
+                disabled={loading}
+              >
+                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                Actualiser
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <main className="container-main py-8 lg:py-12 space-y-6">
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
+            <div className="glass-card p-8 rounded-xl">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
+            </div>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="glass-card p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
             {error}
           </div>
         )}
 
         {!loading && commandes.length === 0 && !error && (
-          <div className="bg-white rounded-xl shadow-sm p-10 text-center text-gray-500">
-            Vous n'avez pas encore de commandes.
+          <div className="glass-card p-12 lg:p-16 text-center rounded-xl">
+            <Package size={64} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-lg text-gray-600 font-medium mb-2">Vous n'avez pas encore de commandes.</p>
+            <p className="text-sm text-gray-500">Commencez vos achats dès maintenant !</p>
           </div>
         )}
 
         {commandes.map((commande) => {
           const currentIndex = statutSteps.findIndex((step) => step.key === commande.statut);
           return (
-            <div key={commande._id} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+            <div key={commande._id} className="glass-card p-6 lg:p-8 space-y-6 hover-lift rounded-xl">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Commande #{commande._id.slice(-8)}</p>
@@ -198,12 +207,14 @@ export default function MesCommandesPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {statutSteps.map((step, index) => (
                   <div
                     key={step.key}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
-                      index <= currentIndex ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-500"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      index <= currentIndex 
+                        ? "glass-button bg-blue-100 text-blue-800 border border-blue-200" 
+                        : "glass-button bg-gray-100 text-gray-500 border border-gray-200"
                     }`}
                   >
                     {step.icon}
@@ -212,39 +223,44 @@ export default function MesCommandesPage() {
                 ))}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-800">Articles</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="glass-card p-5 rounded-xl space-y-4">
+                  <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                    <Package size={20} />
+                    Articles
+                  </h3>
                   <div className="space-y-3">
                     {commande.items.map((item, idx) => (
-                      <div key={`${item.produit.nom}-${idx}`} className="flex justify-between text-sm text-gray-700">
+                      <div key={`${item.produit.nom}-${idx}`} className="flex justify-between items-center p-3 glass-button rounded-lg">
                         <div>
-                          <p className="font-medium">{item.produit.nom}</p>
+                          <p className="font-semibold text-gray-900">{item.produit.nom}</p>
                           <p className="text-xs text-gray-500">x{item.quantite}</p>
                         </div>
-                        <p className="font-semibold">{item.sousTotal.toFixed(2)} DT</p>
+                        <p className="font-bold text-blue-600">{item.sousTotal.toFixed(2)} DT</p>
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-between pt-2 border-t">
-                    <span className="font-semibold">Total</span>
-                    <span className="text-lg font-bold text-blue-600">{commande.montantTotal.toFixed(2)} DT</span>
+                  <div className="flex justify-between pt-4 border-t border-gray-200">
+                    <span className="font-bold text-lg text-gray-900">Total</span>
+                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      {commande.montantTotal.toFixed(2)} DT
+                    </span>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-800">Livraison & paiement</h3>
-                  <div className="text-sm text-gray-600">
-                    <p>{commande.adresseLivraison.rue}</p>
+                <div className="glass-card p-5 rounded-xl space-y-4">
+                  <h3 className="font-bold text-lg text-gray-900">Livraison & paiement</h3>
+                  <div className="text-sm text-gray-700 space-y-2">
+                    <p className="font-medium">{commande.adresseLivraison.rue}</p>
                     <p>
                       {commande.adresseLivraison.ville}, {commande.adresseLivraison.codePostal}
                     </p>
                     <p>{commande.adresseLivraison.pays}</p>
-                    <p>Tél: {commande.adresseLivraison.telephone}</p>
+                    <p className="pt-2 border-t border-gray-200">Tél: {commande.adresseLivraison.telephone}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      Paiement ({commande.methodePaiement})
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900 mb-2">
+                      Paiement ({commande.methodePaiement === "carte" ? "Stripe" : commande.methodePaiement})
                     </p>
                     {renderPaiementDetails(commande)}
                   </div>

@@ -3,13 +3,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Heart, Star, Search, LogOut } from "lucide-react";
+import { ShoppingCart, Heart, Star, Search, LogOut, X, Plus, Minus, Filter } from "lucide-react";
 
 interface Product {
   _id: string;
   nom: string;
   description: string;
-  image: string;
+  image?: string;
+  images?: string[];
   prix: number;
   score_moyen: number;
   categorie: {
@@ -36,11 +37,11 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc" | "rating">("price-asc");
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [favoriteItems, setFavoriteItems] = useState<Product[]>([]);
-  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState({
     rue: "",
     ville: "",
@@ -48,9 +49,6 @@ export default function HomePage() {
     pays: "Tunisie",
     telephone: "",
   });
-  const [paymentMethod, setPaymentMethod] = useState<"especes" | "carte" | "paypal">("especes");
-  const [cardDetails, setCardDetails] = useState({ titulaire: "", numero: "", expiration: "" });
-  const [paypalDetails, setPaypalDetails] = useState({ email: "", transactionId: "" });
   const [commentaire, setCommentaire] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "error" | "success"; message: string; factureUrl?: string } | null>(null);
@@ -58,16 +56,14 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est connecté
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    
+
     if (!token) {
       router.push("/login");
       return;
     }
 
-    // Si c'est un admin, rediriger vers dashboard
     if (role === "admin") {
       router.push("/dashboard");
       return;
@@ -94,21 +90,17 @@ export default function HomePage() {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem("token");
-      
-      // Fetch categories
-      const catRes = await fetch("/api/categories", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const catData = await catRes.json();
-      setCategories(catData);
 
-      // Fetch products
-      const prodRes = await fetch("/api/products", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const [catRes, prodRes] = await Promise.all([
+        fetch("/api/categories", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/products", { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+
+      const catData = await catRes.json();
       const prodData = await prodRes.json();
-      setProducts(prodData);
-      
+
+      setCategories(Array.isArray(catData) ? catData : []);
+      setProducts(Array.isArray(prodData) ? prodData : []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -135,7 +127,7 @@ export default function HomePage() {
         {
           produitId: product._id,
           nom: product.nom,
-          image: product.image,
+          image: product.image || product.images?.[0] || "",
           prix: product.prix,
           quantite: 1,
         },
@@ -171,10 +163,6 @@ export default function HomePage() {
     });
   };
 
-  const removeFavorite = (produitId: string) => {
-    setFavoriteItems((prev) => prev.filter((item) => item._id !== produitId));
-  };
-
   const resetCart = () => {
     setCartItems([]);
     setDeliveryInfo({
@@ -184,41 +172,8 @@ export default function HomePage() {
       pays: "Tunisie",
       telephone: "",
     });
-    setPaymentMethod("especes");
-    setCardDetails({ titulaire: "", numero: "", expiration: "" });
-    setPaypalDetails({ email: "", transactionId: "" });
     setCommentaire("");
     setHasAttemptedSubmit(false);
-  };
-
-  const cartCount = cartItems.reduce((total, item) => total + item.quantite, 0);
-  const cartTotal = cartItems.reduce((total, item) => total + item.prix * item.quantite, 0);
-  const favoriteCount = favoriteItems.length;
-  const isFavorite = (produitId: string) => favoriteItems.some((item) => item._id === produitId);
-
-  const validateDeliveryInfo = () => {
-    const requiredFields: Array<keyof typeof deliveryInfo> = ["rue", "ville", "codePostal", "pays", "telephone"];
-    return requiredFields.every((field) => deliveryInfo[field].trim().length > 0);
-  };
-
-  const validatePaymentDetails = () => {
-    if (paymentMethod === "especes") {
-      return true;
-    }
-    if (paymentMethod === "carte") {
-      return (
-        cardDetails.titulaire.trim().length > 0 &&
-        cardDetails.numero.replace(/\s/g, "").length >= 12 &&
-        cardDetails.expiration.trim().length >= 4
-      );
-    }
-    if (paymentMethod === "paypal") {
-      return (
-        paypalDetails.email.trim().length > 0 &&
-        paypalDetails.transactionId.trim().length > 0
-      );
-    }
-    return false;
   };
 
   const handleCheckout = async () => {
@@ -233,11 +188,6 @@ export default function HomePage() {
       return;
     }
 
-    if (!validatePaymentDetails()) {
-      setFeedback({ type: "error", message: "Complétez les informations de paiement requises." });
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       setFeedback(null);
@@ -247,21 +197,7 @@ export default function HomePage() {
         return;
       }
 
-      const paiementPayload =
-        paymentMethod === "carte"
-          ? {
-              titulaire: cardDetails.titulaire,
-              numeroCarte: cardDetails.numero,
-              expiration: cardDetails.expiration,
-            }
-          : paymentMethod === "paypal"
-          ? {
-              paypalEmail: paypalDetails.email,
-              transactionId: paypalDetails.transactionId,
-            }
-          : undefined;
-
-      const response = await fetch("/api/commandes", {
+      const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -269,29 +205,20 @@ export default function HomePage() {
         },
         body: JSON.stringify({
           items: cartItems.map((item) => ({
-            produit: item.produitId,
+            produitId: item.produitId,
             quantite: item.quantite,
           })),
           adresseLivraison: deliveryInfo,
-          methodePaiement: paymentMethod,
           commentaire,
-          paiementDetails: paiementPayload,
         }),
       });
 
-      const responseBody = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseBody.details || responseBody.error || "Échec de la commande");
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Impossible de démarrer le paiement Stripe.");
       }
 
-      resetCart();
-      setIsCartOpen(false);
-      setFeedback({
-        type: "success",
-        message: "Commande envoyée avec succès !",
-        factureUrl: responseBody.factureUrl,
-      });
+      window.location.href = data.url as string;
     } catch (error) {
       setFeedback({
         type: "error",
@@ -302,105 +229,123 @@ export default function HomePage() {
     }
   };
 
+  const validateDeliveryInfo = () => {
+    const requiredFields: Array<keyof typeof deliveryInfo> = ["rue", "ville", "codePostal", "pays", "telephone"];
+    return requiredFields.every((field) => deliveryInfo[field].trim().length > 0);
+  };
+
   const getInputClasses = (hasError: boolean) =>
-    `w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 ${
-      hasError ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"
+    `w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 transition ${hasError ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"
     }`;
 
   const deliveryFieldError = (value: string) => hasAttemptedSubmit && !value.trim();
 
-  const cardFieldError = (field: keyof typeof cardDetails) => {
-    if (paymentMethod !== "carte" || !hasAttemptedSubmit) return false;
-    if (field === "numero") {
-      return cardDetails.numero.replace(/\s/g, "").length < 12;
-    }
-    if (field === "expiration") {
-      return cardDetails.expiration.trim().length < 4;
-    }
-    return !cardDetails[field].trim();
-  };
+  const cartCount = cartItems.reduce((total, item) => total + item.quantite, 0);
+  const cartTotal = cartItems.reduce((total, item) => total + item.prix * item.quantite, 0);
+  const favoriteCount = favoriteItems.length;
+  const isFavorite = (produitId: string) => favoriteItems.some((item) => item._id === produitId);
 
-  const paypalFieldError = (field: keyof typeof paypalDetails) =>
-    paymentMethod === "paypal" && hasAttemptedSubmit && !paypalDetails[field].trim();
-
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory = selectedCategory === "all" || product.categorie._id === selectedCategory;
-    const matchesSearch = product.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Filter and sort products
+  const filteredProducts = products
+    .filter((product) => {
+      const matchesCategory = selectedCategory === "all" || product.categorie._id === selectedCategory;
+      const matchesSearch =
+        product.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "price-asc":
+          return a.prix - b.prix;
+        case "price-desc":
+          return b.prix - a.prix;
+        case "rating":
+          return b.score_moyen - a.score_moyen;
+        default:
+          return 0;
+      }
+    });
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-pattern">
+        <div className="glass-card p-8">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center justify-between gap-4">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-2xl px-4 py-2 rounded-lg">
-                ShopStyle
-              </div>
-              <button
-                onClick={() => router.push("/mes-commandes")}
-                className="text-sm font-semibold text-blue-600 underline md:hidden"
-              >
-                Mes commandes
-              </button>
-            </div>
+    <div className="min-h-screen bg-pattern">
+      {/* Modern Navbar */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="container-main">
+          <div className="flex items-center justify-between h-16 lg:h-20">
+            {/* Logo */}
+            <h1
+              className="text-2xl lg:text-3xl font-bold text-blue-600 cursor-pointer"
+              onClick={() => router.push("/home")}
+            >
+              ShopStyle
+            </h1>
 
+            {/* Search Bar - Desktop */}
             <div className="hidden md:flex flex-1 max-w-xl mx-8">
               <div className="relative w-full">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Rechercher des produits..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Rechercher un produit par nom, catégorie ou description..."
+                  className="w-full pl-12 pr-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
               </div>
             </div>
 
+            {/* Actions */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push("/mes-commandes")}
-                className="hidden md:inline-flex items-center border border-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition"
+                className="hidden md:inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-4 py-2"
               >
                 Mes commandes
               </button>
+
               <button
                 type="button"
-                className="relative hover:text-red-500 transition"
-                onClick={() => setIsFavoritesOpen(true)}
-                aria-label="Ouvrir les favoris"
+                className="relative p-2.5 text-gray-700 hover:text-red-500 transition-colors"
+                onClick={() => setFavoriteItems(favoriteItems.length > 0 ? [] : favoriteItems)}
               >
-                <Heart size={24} className={favoriteCount ? "fill-red-500 text-red-500" : "text-gray-700"} />
-                <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {favoriteCount}
-                </span>
+                <Heart
+                  size={22}
+                  className={favoriteCount ? "fill-red-500 text-red-500" : ""}
+                />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {favoriteCount}
+                  </span>
+                )}
               </button>
+
               <button
                 type="button"
-                className="relative hover:text-blue-600 transition"
+                className="relative p-2.5 text-gray-700 hover:text-blue-600 transition-colors"
                 onClick={() => setIsCartOpen(true)}
-                aria-label="Ouvrir le panier"
               >
-                <ShoppingCart size={24} />
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartCount}
-                </span>
+                <ShoppingCart size={22} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {cartCount}
+                  </span>
+                )}
               </button>
-              <button 
+
+              <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm font-medium"
+                className="hidden md:flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 <LogOut size={18} />
                 <span>Déconnexion</span>
@@ -408,458 +353,382 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="md:hidden">
+          {/* Search Bar - Mobile */}
+          <div className="md:hidden pb-4 pt-2">
             <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
-                placeholder="Rechercher..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Rechercher un produit..."
+                className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
             </div>
           </div>
+        </div>
+      </header>
 
-          <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide pb-1">
-            <span className="text-sm font-semibold text-gray-600 whitespace-nowrap mr-2">Catégories :</span>
-            <button
-              onClick={() => setSelectedCategory("all")}
-              className={`px-6 py-2 rounded-full whitespace-nowrap transition ${
-                selectedCategory === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Tous les produits
-            </button>
-            {categories.map((cat) => (
+      {/* Category Filter & Sort */}
+      <div className="bg-white border-b border-gray-200 sticky top-20 z-40 shadow-sm">
+        <div className="container-main py-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* Categories */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
+              <Filter size={18} className="text-gray-500 flex-shrink-0" />
               <button
-                key={cat._id}
-                onClick={() => setSelectedCategory(cat._id)}
-                className={`px-6 py-2 rounded-full whitespace-nowrap transition ${
-                  selectedCategory === cat._id
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                onClick={() => setSelectedCategory("all")}
+                className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all font-medium text-sm ${selectedCategory === "all"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
-                {cat.nom}
+                Tous
               </button>
-            ))}
+              {categories.map((cat) => (
+                <button
+                  key={cat._id}
+                  onClick={() => setSelectedCategory(cat._id)}
+                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all font-medium text-sm ${selectedCategory === cat._id
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                >
+                  {cat.nom}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              <option value="default">Trier par</option>
+              <option value="price-asc">Prix croissant</option>
+              <option value="price-desc">Prix décroissant</option>
+              <option value="rating">Mieux notés</option>
+            </select>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Products Grid */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {selectedCategory === "all" 
-              ? "Tous nos produits" 
-              : categories.find(c => c._id === selectedCategory)?.nom}
+      <main className="container-main py-8 lg:py-12">
+        <div className="mb-8">
+          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+            {selectedCategory === "all"
+              ? "Tous nos produits"
+              : categories.find((c) => c._id === selectedCategory)?.nom}
           </h2>
-          <p className="text-gray-600 mt-1">{filteredProducts.length} produits trouvés</p>
+          <p className="text-gray-600 text-lg">{filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} trouvé{filteredProducts.length > 1 ? 's' : ''}</p>
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-500 text-lg">Aucun produit trouvé</p>
+          <div className="text-center py-20 lg:py-32">
+            <div className="glass-card p-12 lg:p-16 max-w-md mx-auto rounded-2xl">
+              <Package size={64} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-700 text-xl lg:text-2xl font-semibold mb-2">Aucun produit trouvé</p>
+              <p className="text-gray-500 text-sm">Essayez de modifier vos critères de recherche</p>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <div
-                key={product._id}
-                role="button"
-                tabIndex={0}
-                onClick={() => router.push(`/product/${product._id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    router.push(`/product/${product._id}`);
-                  }
-                }}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <div className="relative h-64 bg-gray-200 overflow-hidden">
-                  <img
-                    src={product.image || "/placeholder-product.jpg"}
-                    alt={product.nom}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <button
-                    type="button"
-                    className={`absolute top-3 right-3 bg-white p-2 rounded-full shadow-md transition ${
-                      isFavorite(product._id) ? "bg-red-50" : "hover:bg-gray-100"
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(product);
-                    }}
-                    aria-label="Ajouter aux favoris"
-                  >
-                    <Heart
-                      size={20}
-                      className={isFavorite(product._id) ? "text-red-500 fill-red-500" : "text-gray-600 hover:text-red-500"}
-                    />
-                  </button>
-                  {product.score_moyen > 0 && (
-                    <div className="absolute bottom-3 left-3 bg-white px-2 py-1 rounded-full flex items-center space-x-1 shadow-md">
-                      <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                      <span className="text-sm font-semibold">{product.score_moyen.toFixed(1)}</span>
-                    </div>
-                  )}
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 animate-fade-in">
+            {filteredProducts.map((product, index) => {
+              // Utiliser images[0] ou image (selon le modèle MongoDB)
+              const productImage = (product.images && product.images.length > 0) 
+                ? product.images[0] 
+                : product.image || null;
+              
+              // Placeholder SVG si pas d'image
+              const placeholderSvg = `data:image/svg+xml,${encodeURIComponent(`
+                <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="400" height="300" fill="#f3f4f6"/>
+                  <text x="50%" y="50%" font-family="Arial" font-size="18" fill="#9ca3af" text-anchor="middle" dy=".3em">
+                    ${product.nom}
+                  </text>
+                </svg>
+              `)}`;
 
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 line-clamp-1">
-                    {product.nom}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {product.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-blue-600">
-                      {product.prix.toFixed(2)} DT
-                    </span>
+              return (
+                <div
+                  key={product._id}
+                  className="glass-card overflow-hidden hover-lift cursor-pointer group rounded-2xl"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  {/* Product Image */}
+                  <div
+                    className="relative h-80 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 overflow-hidden"
+                    onClick={() => router.push(`/product/${product._id}`)}
+                  >
+                    {productImage ? (
+                      <img
+                        src={productImage}
+                        alt={product.nom}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = placeholderSvg;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+                        <div className="text-center p-6">
+                          <Package size={48} className="mx-auto text-gray-400 mb-3" />
+                          <p className="text-gray-500 font-medium text-sm">{product.nom}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {/* Favorite Button */}
                     <button
                       type="button"
+                      className={`absolute top-4 right-4 p-2.5 glass-button rounded-full transition-all hover:scale-125 ${isFavorite(product._id) ? "bg-white/40" : ""
+                        }`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToCart(product);
+                        toggleFavorite(product);
                       }}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
                     >
-                      Ajouter
+                      <Heart
+                        size={20}
+                        className={isFavorite(product._id) ? "text-red-500 fill-red-500" : "text-gray-700"}
+                      />
                     </button>
+
+                    {/* Rating Badge */}
+                    {product.score_moyen > 0 && (
+                      <div className="absolute bottom-4 left-4 glass-button px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                        <span className="text-sm font-bold text-gray-900">{product.score_moyen.toFixed(1)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="p-6 space-y-4">
+                    <div onClick={() => router.push(`/product/${product._id}`)} className="space-y-2">
+                      <h3 className="font-bold text-gray-900 text-xl line-clamp-1 group-hover:text-blue-600 transition-colors">
+                        {product.nom}
+                      </h3>
+                      <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+                        {product.description}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200/50">
+                      <div className="flex flex-col">
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          {product.prix.toFixed(2)} DT
+                        </span>
+                        {product.score_moyen > 0 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                            <span className="text-xs text-gray-600">{product.score_moyen.toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(product);
+                        }}
+                        className="btn-primary text-sm px-6 py-3 flex items-center gap-2 rounded-xl font-semibold hover:scale-105 transition-transform"
+                      >
+                        <ShoppingCart size={18} />
+                        Ajouter
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
 
+      {/* Glassmorphism Cart Sidebar */}
       {isCartOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 animate-fade-in"
             onClick={() => setIsCartOpen(false)}
           />
-          <aside className="fixed right-0 top-0 h-full w-full sm:w-2/3 lg:w-[28rem] bg-white z-50 shadow-2xl flex flex-col max-h-screen overflow-hidden">
-            <header className="p-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
-              <div>
-                <h3 className="text-lg font-semibold">Mon panier</h3>
-                <p className="text-sm text-gray-500">{cartCount} article(s)</p>
+          <aside className="fixed right-0 top-0 h-full w-full sm:w-2/3 lg:w-[36rem] glass-card z-50 shadow-2xl flex flex-col animate-slide-in border-l border-white/20">
+            <header className="p-8 border-b border-white/20 glass">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-3xl font-bold text-gray-900">Mon panier</h3>
+                  <p className="text-sm text-gray-600 mt-1">{cartCount} article(s)</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCartOpen(false)}
+                  className="glass-button p-3 rounded-xl hover:scale-110 transition-all"
+                >
+                  <X size={24} className="text-gray-700" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsCartOpen(false)}
-                className="text-gray-500 hover:text-gray-800"
-              >
-                Fermer
-              </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4 space-y-4">
-                {cartItems.length === 0 ? (
-                  <p className="text-gray-500">Votre panier est vide.</p>
-                ) : (
-                  cartItems.map((item) => (
-                    <div key={item.produitId} className="flex space-x-3 border rounded-lg p-3">
-                      <img
-                        src={item.image || "/placeholder-product.jpg"}
-                        alt={item.nom}
-                        className="w-16 h-16 rounded object-cover"
-                      />
+            <div className="flex-1 overflow-y-auto p-8">
+              {cartItems.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="glass-button p-8 rounded-2xl inline-block">
+                    <ShoppingCart size={64} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600 font-medium">Votre panier est vide</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {                  cartItems.map((item) => (
+                    <div key={item.produitId} className="glass-card p-5 flex gap-4 hover-lift rounded-xl">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.nom}
+                          className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0">
+                          <Package size={32} className="text-gray-400" />
+                        </div>
+                      )}
                       <div className="flex-1">
-                        <p className="font-semibold">{item.nom}</p>
-                        <p className="text-sm text-gray-500">{item.prix.toFixed(2)} DT</p>
-                        <div className="flex items-center space-x-2 mt-2">
+                        <p className="font-bold text-gray-900 mb-1">{item.nom}</p>
+                        <p className="text-sm text-blue-600 font-semibold">{item.prix.toFixed(2)} DT</p>
+                        <div className="flex items-center gap-3 mt-3">
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.produitId, -1)}
-                            className="w-7 h-7 border rounded-full flex items-center justify-center text-lg"
+                            className="w-9 h-9 glass-button rounded-xl flex items-center justify-center hover:scale-110 transition-all"
                           >
-                            -
+                            <Minus size={16} />
                           </button>
-                          <span>{item.quantite}</span>
+                          <span className="font-bold text-gray-900 min-w-[2rem] text-center">{item.quantite}</span>
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.produitId, 1)}
-                            className="w-7 h-7 border rounded-full flex items-center justify-center text-lg"
+                            className="w-9 h-9 glass-button rounded-xl flex items-center justify-center hover:scale-110 transition-all"
                           >
-                            +
+                            <Plus size={16} />
                           </button>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeFromCart(item.produitId)}
-                        className="text-sm text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 hover:scale-110 transition-all"
                       >
-                        Supprimer
+                        <X size={22} />
                       </button>
                     </div>
-                  ))
-                )}
-              </div>
-
-              <div className="border-t p-4 space-y-3">
-              <h4 className="font-semibold">Informations de livraison</h4>
-              <div className="text-xs text-gray-600 bg-blue-50 border border-blue-100 rounded-lg p-3 space-y-1">
-                <p className="font-semibold text-blue-900">Conditions de passation :</p>
-                <p>• Tous les champs doivent être remplis pour valider la commande.</p>
-                <p>• Paiement par carte : nom, numéro et expiration requis.</p>
-                <p>• Paiement PayPal : email PayPal et ID de transaction requis.</p>
-              </div>
-              <input
-                type="text"
-                placeholder="Rue"
-                value={deliveryInfo.rue}
-                onChange={(e) => setDeliveryInfo({ ...deliveryInfo, rue: e.target.value })}
-                className={getInputClasses(deliveryFieldError(deliveryInfo.rue))}
-              />
-              <p className={`text-xs ${deliveryFieldError(deliveryInfo.rue) ? "text-red-600" : "text-gray-500"}`}>
-                Indiquez la rue exacte pour éviter les retards.
-              </p>
-              <input
-                type="text"
-                placeholder="Ville"
-                value={deliveryInfo.ville}
-                onChange={(e) => setDeliveryInfo({ ...deliveryInfo, ville: e.target.value })}
-                className={getInputClasses(deliveryFieldError(deliveryInfo.ville))}
-              />
-              <p className={`text-xs ${deliveryFieldError(deliveryInfo.ville) ? "text-red-600" : "text-gray-500"}`}>
-                Ville obligatoire pour planifier la livraison.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Code postal"
-                    value={deliveryInfo.codePostal}
-                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, codePostal: e.target.value })}
-                    className={getInputClasses(deliveryFieldError(deliveryInfo.codePostal))}
-                  />
-                  <p className={`text-xs ${deliveryFieldError(deliveryInfo.codePostal) ? "text-red-600" : "text-gray-500"}`}>
-                    Code postal requis.
-                  </p>
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Téléphone"
-                    value={deliveryInfo.telephone}
-                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, telephone: e.target.value })}
-                    className={getInputClasses(deliveryFieldError(deliveryInfo.telephone))}
-                  />
-                  <p className={`text-xs ${deliveryFieldError(deliveryInfo.telephone) ? "text-red-600" : "text-gray-500"}`}>
-                    Numéro utilisé par le livreur en cas de besoin.
-                  </p>
-                </div>
-              </div>
-              <input
-                type="text"
-                placeholder="Pays"
-                value={deliveryInfo.pays}
-                onChange={(e) => setDeliveryInfo({ ...deliveryInfo, pays: e.target.value })}
-                className={getInputClasses(deliveryFieldError(deliveryInfo.pays))}
-              />
-              <p className={`text-xs ${deliveryFieldError(deliveryInfo.pays) ? "text-red-600" : "text-gray-500"}`}>
-                Choisissez le pays de livraison.
-              </p>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">Méthode de paiement</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as "especes" | "carte" | "paypal")}
-                  className={`mt-1 ${getInputClasses(false)}`}
-                >
-                  <option value="especes">Paiement à la livraison</option>
-                  <option value="carte">Carte bancaire</option>
-                  <option value="paypal">PayPal</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Sélectionnez le mode de paiement adapté. Les informations requises apparaissent automatiquement.
-                </p>
-              </div>
-
-              {paymentMethod === "carte" && (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Titulaire de la carte"
-                    value={cardDetails.titulaire}
-                    onChange={(e) => setCardDetails((prev) => ({ ...prev, titulaire: e.target.value }))}
-                    className={getInputClasses(cardFieldError("titulaire"))}
-                  />
-                  <p className={`text-xs ${cardFieldError("titulaire") ? "text-red-600" : "text-gray-500"}`}>
-                    Nom inscrit sur la carte.
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="Numéro de carte"
-                    value={cardDetails.numero}
-                    onChange={(e) => setCardDetails((prev) => ({ ...prev, numero: e.target.value }))}
-                    className={getInputClasses(cardFieldError("numero"))}
-                  />
-                  <p className={`text-xs ${cardFieldError("numero") ? "text-red-600" : "text-gray-500"}`}>
-                    12 chiffres minimum, sans espaces.
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="Expiration (MM/AA)"
-                    value={cardDetails.expiration}
-                    onChange={(e) => setCardDetails((prev) => ({ ...prev, expiration: e.target.value }))}
-                    className={getInputClasses(cardFieldError("expiration"))}
-                  />
-                  <p className={`text-xs ${cardFieldError("expiration") ? "text-red-600" : "text-gray-500"}`}>
-                    Exemple : 04/27.
-                  </p>
+                  ))}
                 </div>
               )}
 
-              {paymentMethod === "paypal" && (
-                <div className="space-y-2">
-                  <input
-                    type="email"
-                    placeholder="Email PayPal"
-                    value={paypalDetails.email}
-                    onChange={(e) => setPaypalDetails((prev) => ({ ...prev, email: e.target.value }))}
-                    className={getInputClasses(paypalFieldError("email"))}
-                  />
-                  <p className={`text-xs ${paypalFieldError("email") ? "text-red-600" : "text-gray-500"}`}>
-                    Utilisez l&apos;adresse PayPal qui a servi au paiement.
-                  </p>
+              {cartItems.length > 0 && (
+                <div className="mt-8 space-y-4">
+                  <h4 className="font-bold text-lg text-gray-900 mb-4">Informations de livraison</h4>
                   <input
                     type="text"
-                    placeholder="ID de transaction PayPal"
-                    value={paypalDetails.transactionId}
-                    onChange={(e) => setPaypalDetails((prev) => ({ ...prev, transactionId: e.target.value }))}
-                    className={getInputClasses(paypalFieldError("transactionId"))}
+                    placeholder="Numéro et nom de la rue"
+                    value={deliveryInfo.rue}
+                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, rue: e.target.value })}
+                    className={getInputClasses(deliveryFieldError(deliveryInfo.rue))}
                   />
-                  <p className={`text-xs ${paypalFieldError("transactionId") ? "text-red-600" : "text-gray-500"}`}>
-                    Disponible dans le reçu PayPal.
-                  </p>
-                </div>
-              )}
-
-              <textarea
-                placeholder="Commentaire (optionnel)"
-                value={commentaire}
-                onChange={(e) => setCommentaire(e.target.value)}
-                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                rows={3}
-              />
-
-              <div className="flex items-center justify-between text-base font-semibold">
-                <span>Total</span>
-                <span>{cartTotal.toFixed(2)} DT</span>
-              </div>
-
-              {feedback && (
-                <p
-                  className={`text-sm ${
-                    feedback.type === "error" ? "text-red-600" : "text-green-600"
-                  }`}
-                >
-                  {feedback.message}
-                </p>
-              )}
-              {feedback?.factureUrl && (
-                <a
-                  href={feedback.factureUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-sm text-blue-600 underline"
-                >
-                  Télécharger ma facture
-                </a>
-              )}
-
-              <button
-                type="button"
-                onClick={handleCheckout}
-                disabled={isSubmitting || !cartItems.length}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-300 disabled:text-gray-500"
-              >
-                {isSubmitting ? "Envoi de la commande..." : "Passer la commande"}
-              </button>
-            </div>
-          </div>
-          </aside>
-        </>
-      )}
-
-      {isFavoritesOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-            onClick={() => setIsFavoritesOpen(false)}
-          />
-          <aside className="fixed right-0 top-0 h-full w-full sm:w-2/3 lg:w-[24rem] bg-white z-50 shadow-2xl flex flex-col">
-            <header className="p-4 border-b flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Mes favoris</h3>
-                <p className="text-sm text-gray-500">{favoriteCount} produit(s)</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsFavoritesOpen(false)}
-                className="text-gray-500 hover:text-gray-800 text-sm"
-              >
-                Fermer
-              </button>
-            </header>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {favoriteItems.length === 0 ? (
-                <p className="text-gray-500 text-sm">Vous n&apos;avez pas encore de favoris.</p>
-              ) : (
-                favoriteItems.map((item) => (
-                  <div key={item._id} className="flex gap-3 border rounded-lg p-3">
-                    <img
-                      src={item.image || "/placeholder-product.jpg"}
-                      alt={item.nom}
-                      className="w-16 h-16 rounded object-cover"
+                  <input
+                    type="text"
+                    placeholder="Nom de votre ville"
+                    value={deliveryInfo.ville}
+                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, ville: e.target.value })}
+                    className={getInputClasses(deliveryFieldError(deliveryInfo.ville))}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Ex: 1000, 2000..."
+                      value={deliveryInfo.codePostal}
+                      onChange={(e) => setDeliveryInfo({ ...deliveryInfo, codePostal: e.target.value })}
+                      className={getInputClasses(deliveryFieldError(deliveryInfo.codePostal))}
                     />
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{item.nom}</p>
-                      <p className="text-sm text-gray-500 mb-2">{item.prix.toFixed(2)} DT</p>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            router.push(`/product/${item._id}`);
-                            setIsFavoritesOpen(false);
-                          }}
-                          className="text-blue-600 text-xs font-medium hover:underline"
-                        >
-                          Voir le produit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeFavorite(item._id)}
-                          className="text-red-500 text-xs font-medium hover:underline"
-                        >
-                          Retirer
-                        </button>
-                      </div>
-                    </div>
+                    <input
+                      type="text"
+                      placeholder="Ex: +216 XX XXX XXX"
+                      value={deliveryInfo.telephone}
+                      onChange={(e) => setDeliveryInfo({ ...deliveryInfo, telephone: e.target.value })}
+                      className={getInputClasses(deliveryFieldError(deliveryInfo.telephone))}
+                    />
                   </div>
-                ))
+                  <input
+                    type="text"
+                    placeholder="Sélectionnez votre pays"
+                    value={deliveryInfo.pays}
+                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, pays: e.target.value })}
+                    className={getInputClasses(deliveryFieldError(deliveryInfo.pays))}
+                  />
+                  <textarea
+                    placeholder="Instructions spéciales pour la livraison (optionnel)"
+                    value={commentaire}
+                    onChange={(e) => setCommentaire(e.target.value)}
+                    className="w-full glass-card border-0 p-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    rows={3}
+                  />
+                </div>
               )}
             </div>
+
+            {cartItems.length > 0 && (
+              <div className="p-8 border-t border-white/20 glass space-y-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold text-gray-700">Total</span>
+                  <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    {cartTotal.toFixed(2)} DT
+                  </span>
+                </div>
+
+                {feedback && (
+                  <p
+                    className={`text-sm p-4 rounded-xl font-medium ${feedback.type === "error"
+                        ? "bg-red-50 text-red-700 border border-red-200"
+                        : "bg-green-50 text-green-700 border border-green-200"
+                      }`}
+                  >
+                    {feedback.message}
+                  </p>
+                )}
+
+                <button
+                  onClick={handleCheckout}
+                  disabled={isSubmitting}
+                  className="w-full btn-primary py-4 text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                      Traitement...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart size={20} />
+                      Procéder au paiement
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </aside>
         </>
       )}
-
-      <footer className="bg-gray-800 text-white py-8 mt-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-gray-400">© 2025 ShopStyle. Tous droits réservés.</p>
-        </div>
-      </footer>
     </div>
   );
 }

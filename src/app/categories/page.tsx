@@ -111,19 +111,19 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-pattern">
       <AdminNavbar />
 
-      <main className="max-w-5xl mx-auto px-4 pb-12 pt-28">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+      <main className="container-main pb-16 pt-20 lg:pt-24">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-12">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-blue-100 text-blue-600">
+            <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
               <Tag size={24} />
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Catalogue</p>
-              <h1 className="text-3xl font-bold text-slate-900">Gestion des catégories</h1>
-              <p className="text-slate-500 mt-1">
+              <p className="text-sm uppercase tracking-wider text-gray-500 mb-1">Catalogue</p>
+              <h1 className="text-3xl font-bold text-gray-900">Gestion des catégories</h1>
+              <p className="text-gray-600 mt-1 text-sm">
                 Structurez vos univers produit pour un parcours client fluide.
               </p>
             </div>
@@ -131,7 +131,7 @@ export default function CategoriesPage() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => router.push("/products")}
-              className="px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-slate-400 transition"
+              className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium"
             >
               Gérer les produits
             </button>
@@ -141,7 +141,7 @@ export default function CategoriesPage() {
                 setEditingId(null);
                 setCategoryName("");
               }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow-lg hover:shadow-xl transition"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-700 transition-colors"
             >
               <Plus size={18} />
               Nouvelle catégorie

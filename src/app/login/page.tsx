@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogIn, Mail, Lock, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -25,11 +26,9 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok && data.token) {
-        // Sauvegarder le token et le rôle
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
 
-        // ✅ Redirection selon le rôle
         if (data.role === "admin") {
           router.push("/dashboard");
         } else {
@@ -47,49 +46,94 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-50">
-      <form onSubmit={handleLogin} className="p-6 border rounded-lg shadow-lg bg-white w-80">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-pattern p-4">
+      <div className="w-full max-w-md">
+        <div className="glass-card p-8 md:p-10 space-y-6">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-full mb-2">
+              <LogIn size={28} className="text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Connexion</h1>
+            <p className="text-gray-600">Bienvenue sur ShopStyle</p>
+          </div>
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full border p-2 mb-3 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isLoading}
-        />
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  placeholder="Entrez votre adresse email"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full border p-2 mb-4 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isLoading}
-        />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Mot de passe
+              </label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="password"
+                  placeholder="Entrez votre mot de passe"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
 
-        <button
-          type="submit"
-          className="bg-green-500 hover:bg-green-600 text-white w-full py-2 rounded transition disabled:bg-gray-400"
-          disabled={isLoading}
-        >
-          {isLoading ? "Logging in..." : "Login"}
-        </button>
+            {message && (
+              <div className={`p-4 rounded-xl flex items-center gap-3 ${
+                message.includes("failed") || message.includes("error") || message.includes("Error")
+                  ? "bg-red-50 text-red-700 border border-red-200"
+                  : "bg-green-50 text-green-700 border border-green-200"
+              }`}>
+                <AlertCircle size={18} />
+                <span className="text-sm font-medium">{message}</span>
+              </div>
+            )}
 
-        {message && (
-          <p className="mt-3 text-sm text-red-500 text-center">{message}</p>
-        )}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full btn-primary py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                  Connexion...
+                </>
+              ) : (
+                <>
+                  <LogIn size={20} />
+                  Se connecter
+                </>
+              )}
+            </button>
+          </form>
 
-        <p className="mt-4 text-sm text-center text-gray-600">
-          Don't have an account?{" "}
-          <a href="/register" className="text-blue-500 hover:underline">
-            Register
-          </a>
-        </p>
-      </form>
+          <div className="pt-6 border-t border-gray-200">
+            <p className="text-sm text-center text-gray-600">
+              Pas encore de compte ?{" "}
+              <a href="/register" className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors">
+                Créer un compte
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

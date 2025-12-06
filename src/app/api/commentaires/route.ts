@@ -14,6 +14,9 @@ const recalculateProduitScore = async (produitId: string) => {
   await Produit.findByIdAndUpdate(produitId, { score_moyen: avg });
 };
 
+const PYTHON_AI_URL =
+  process.env.PYTHON_AI_URL || "http://127.0.0.1:4000/analyze";
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -82,12 +85,50 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Produit introuvable" }), { status: 404 });
     }
 
+    // Appel au service IA Python pour analyser le sentiment du commentaire
+    let sentiment: "positif" | "negatif" | "neutre" = "neutre";
+    let scoreConfiance = 0;
+
+    try {
+      const aiResponse = await fetch(PYTHON_AI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: contenu }),
+      });
+
+      if (aiResponse.ok) {
+        const data = (await aiResponse.json()) as {
+          sentiment?: string;
+          confidence?: number;
+        };
+
+        const s = data.sentiment;
+        const c = typeof data.confidence === "number" ? data.confidence : 0;
+
+        if (s === "positive") sentiment = "positif";
+        else if (s === "negative") sentiment = "negatif";
+        else if (s === "neutre") sentiment = "neutre";
+
+        scoreConfiance = c;
+      } else {
+        console.error("Erreur service IA:", await aiResponse.text());
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'appel au service IA:", error);
+    }
+
+    // Règle métier : une note de 3 étoiles est considérée comme neutre
+    if (note === 3) {
+      sentiment = "neutre";
+    }
+
     const commentaire = await Commentaire.create({
       produit: produitId,
       utilisateur: decoded.userId,
       contenu,
       note,
-      sentiment: "neutre",
+      sentiment,
+      scoreConfiance,
     });
 
     await recalculateProduitScore(produitId);
