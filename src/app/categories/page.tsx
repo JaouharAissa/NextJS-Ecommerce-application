@@ -1,9 +1,8 @@
-// app/categories/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, ArrowRight } from "lucide-react";
 import AdminNavbar from "@/app/components/AdminNavbar";
 
 interface Category {
@@ -104,127 +103,113 @@ export default function CategoriesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-pattern">
+    <div className="min-h-screen bg-white text-black font-sans">
       <AdminNavbar />
 
-      <main className="container-main pb-16 pt-20 lg:pt-24">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-12">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
-              <Tag size={24} />
-            </div>
-            <div>
-              <p className="text-sm uppercase tracking-wider text-gray-500 mb-1">Catalogue</p>
-              <h1 className="text-3xl font-bold text-gray-900">Gestion des catégories</h1>
-              <p className="text-gray-600 mt-1 text-sm">
-                Structurez vos univers produit pour un parcours client fluide.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => router.push("/products")}
-              className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-            >
-              Gérer les produits
-            </button>
-            <button
-              onClick={() => {
-                setShowForm(true);
-                setEditingId(null);
-                setCategoryName("");
-              }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={18} />
-              Nouvelle catégorie
-            </button>
-          </div>
+      <main className="container-main pt-24 pb-16">
+        <div className="mb-8">
+          <h1 className="text-3xl font-serif font-medium mb-2">Catégories</h1>
+          <p className="text-gray-500 text-sm">Gérez les univers de votre boutique</p>
+        </div>
+
+        <div className="mb-12 pb-8 border-b border-gray-100">
+          <button
+            onClick={() => {
+              setShowForm(true);
+              setEditingId(null);
+              setCategoryName("");
+            }}
+            className="btn-primary"
+          >
+            <Plus size={18} className="mr-2" />
+            Nouvelle catégorie
+          </button>
         </div>
 
         {/* Form */}
         {showForm && (
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">
+          <div className="bg-gray-50 p-8 mb-12 border border-gray-100">
+            <h2 className="text-lg font-medium mb-6 uppercase tracking-wider">
               {editingId ? "Modifier la catégorie" : "Ajouter une catégorie"}
             </h2>
-            <form onSubmit={handleSubmit} className="flex gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4">
               <input
                 type="text"
-                placeholder="Nom de la catégorie (ex: Pantalons, Chaussures)"
+                placeholder="Nom de la catégorie"
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
-                className="border p-3 rounded flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors"
                 required
               />
-              <button
-                type="submit"
-                className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 transition"
-              >
-                {editingId ? "Mettre à jour" : "Ajouter"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  setEditingId(null);
-                  setCategoryName("");
-                }}
-                className="bg-gray-100 text-gray-700 px-6 py-3 rounded hover:bg-gray-200 transition"
-              >
-                Annuler
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingId(null);
+                    setCategoryName("");
+                  }}
+                  className="px-8 py-4 border border-gray-200 text-sm font-medium uppercase tracking-wider hover:bg-white transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="bg-black text-white px-8 py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors"
+                >
+                  {editingId ? "Mettre à jour" : "Ajouter"}
+                </button>
+              </div>
             </form>
           </div>
         )}
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => (
             <div
               key={category._id}
-              className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 hover:shadow-xl transition-all"
+              className="group border border-gray-100 p-6 hover:border-black transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Tag className="text-blue-600" size={24} />
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {category.nom}
-                  </h3>
-                </div>
-                <div className="flex space-x-2">
+              <div className="flex items-center justify-between mb-4">
+                <Tag size={20} className="text-gray-400 group-hover:text-black transition-colors" />
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleEdit(category)}
-                    className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition"
+                    className="p-2 hover:bg-gray-100 transition-colors"
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(category._id)}
-                    className="bg-red-600 text-white p-2 rounded hover:bg-red-700 transition"
+                    className="p-2 hover:bg-gray-100 text-red-500 transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
+              </div>
+              <h3 className="text-xl font-medium">{category.nom}</h3>
+              <div className="mt-4 flex items-center text-xs uppercase tracking-wider text-gray-400 group-hover:text-black transition-colors">
+                Voir les produits <ArrowRight size={14} className="ml-2" />
               </div>
             </div>
           ))}
         </div>
 
         {categories.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-dashed border-slate-200">
-            <Tag className="mx-auto text-gray-400 mb-4" size={64} />
-            <p className="text-gray-500 text-lg">Aucune catégorie disponible</p>
+          <div className="text-center py-24 border border-dashed border-gray-200">
+            <Tag className="mx-auto text-gray-300 mb-4" size={48} />
+            <p className="text-gray-500 mb-4">Aucune catégorie disponible</p>
             <button
               onClick={() => setShowForm(true)}
-              className="mt-4 text-blue-600 hover:underline"
+              className="text-black underline underline-offset-4 hover:text-gray-600 transition-colors"
             >
               Créer votre première catégorie
             </button>

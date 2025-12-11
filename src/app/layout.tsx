@@ -30,15 +30,13 @@ export default function RootLayout({
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/home" ||
-    adminPrefixes.some((prefix) => pathname?.startsWith(prefix));
+    (pathname && adminPrefixes.some((prefix) => pathname.startsWith(prefix)));
 
   return (
     <html lang="fr">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="page-shell">
-          {!hideNavbar && <Navbar links={links} />}
-          <main className="relative z-10">{children}</main>
-        </div>
+        {!hideNavbar && <Navbar links={links} />}
+        <main className="relative z-10 min-h-screen">{children}</main>
       </body>
     </html>
   );

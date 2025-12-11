@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,8 +15,10 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Package, Tag, TrendingUp, MessageSquare, AlertTriangle, PieChart as PieChartIcon } from "lucide-react";
+import { Package, Tag, TrendingUp, MessageSquare, AlertTriangle, PieChart as PieChartIcon, ArrowRight } from "lucide-react";
 import AdminNavbar from "@/app/components/AdminNavbar";
+import DashboardStats from "@/app/components/dashboard/DashboardStats";
+import AIAlertsTable from "@/app/components/dashboard/AIAlertsTable";
 
 interface Product {
   _id: string;
@@ -33,6 +34,7 @@ interface Stats {
   totalProducts: number;
   totalCategories: number;
   averagePrice: number;
+  averageScore: number;
 }
 
 interface Commande {
@@ -59,9 +61,9 @@ interface ProductSentimentStats {
 }
 
 const SENTIMENT_COLORS = {
-  positif: "#10b981",
-  neutre: "#f59e0b",
-  negatif: "#ef4444",
+  positif: "#000000", // Black for positive
+  neutre: "#9ca3af",  // Gray for neutral
+  negatif: "#ef4444", // Red for negative (keep for alerts)
 };
 
 export default function DashboardPage() {
@@ -70,6 +72,7 @@ export default function DashboardPage() {
     totalProducts: 0,
     totalCategories: 0,
     averagePrice: 0,
+    averageScore: 0,
   });
   const [recentOrders, setRecentOrders] = useState<Commande[]>([]);
   const [productSentimentStats, setProductSentimentStats] = useState<ProductSentimentStats[]>([]);
@@ -101,7 +104,6 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const prodData = await prodRes.json();
-      // Ensure products is always an array
       setProducts(Array.isArray(prodData) ? prodData : []);
 
       // Fetch categories
@@ -112,13 +114,18 @@ export default function DashboardPage() {
 
       // Calculate stats
       const avgPrice = prodData.length > 0
-        ? prodData.reduce((sum, p) => sum + p.prix, 0) / prodData.length
+        ? prodData.reduce((sum: number, p: Product) => sum + p.prix, 0) / prodData.length
+        : 0;
+
+      const avgScore = prodData.length > 0
+        ? prodData.reduce((sum: number, p: Product) => sum + (p.score_moyen || 0), 0) / prodData.length
         : 0;
 
       setStats({
         totalProducts: prodData.length,
         totalCategories: catData.length,
         averagePrice: avgPrice,
+        averageScore: avgScore,
       });
 
       const ordersRes = await fetch("/api/commandes", {
@@ -149,385 +156,191 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black"></div>
       </div>
     );
   }
 
+  const totalReviews = productSentimentStats.reduce((acc, curr) => acc + curr.total, 0);
+  const negativeReviewsCount = productSentimentStats.filter(s => s.negatifPercent > 20 && s.total > 0).length;
+
   return (
-    <div className="min-h-screen bg-pattern">
+    <div className="min-h-screen bg-white text-black font-sans">
       <AdminNavbar />
 
-      <main className="container-main pb-16 pt-20 lg:pt-24 space-y-12 lg:space-y-16">
-        <section className="glass-card bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white rounded-2xl px-6 py-8 lg:px-8 lg:py-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <main className="container-main pb-16 pt-24 space-y-12">
+        {/* Header Section */}
+        <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-8">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/70">Tableau de bord</p>
-            <h1 className="text-3xl lg:text-4xl font-bold mt-3">Salut, Admin 👋</h1>
-            <p className="text-white/80 mt-3 max-w-2xl">
-              Suivez les performances de ShopStyle, modérez les retours clients et pilotez les opérations depuis un seul espace.
-            </p>
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">Vue d'ensemble</p>
+            <h1 className="text-4xl font-serif font-medium">Tableau de bord</h1>
           </div>
-          <div className="grid grid-cols-2 gap-4 w-full lg:w-auto">
-            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur">
-              <p className="text-xs uppercase text-white/70">Produits actifs</p>
-              <p className="text-3xl font-bold">{stats.totalProducts}</p>
-            </div>
-            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur">
-              <p className="text-xs uppercase text-white/70">Catégories</p>
-              <p className="text-3xl font-bold">{stats.totalCategories}</p>
+          <div className="flex gap-8">
+            <div className="text-right">
+              <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Date</p>
+              <p className="text-xl font-light">{new Date().toLocaleDateString('fr-FR', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
             </div>
           </div>
         </section>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="glass-card p-6 rounded-xl hover-lift">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">Total Produits</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalProducts}</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <Package className="text-blue-600" size={32} />
-              </div>
-            </div>
-          </div>
+        {/* Stats Grid */}
+        <DashboardStats
+          stats={stats}
+          totalOrders={recentOrders.length} // Note: This is just recent orders count, ideally should be total orders from API
+          totalReviews={totalReviews}
+          negativeReviewsCount={negativeReviewsCount}
+        />
 
-          <div className="glass-card p-6 rounded-xl hover-lift">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">Catégories</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalCategories}</p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg">
-                <Tag className="text-green-600" size={32} />
-              </div>
-            </div>
-          </div>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Global Sentiment */}
+          <div>
+            <h2 className="text-xl font-serif font-medium mb-6 border-b border-gray-100 pb-4">Analyse des Sentiments</h2>
+            {productSentimentStats.length > 0 ? (() => {
+              const globalStats = productSentimentStats.reduce(
+                (acc, p) => ({
+                  positifs: acc.positifs + p.positifs,
+                  negatifs: acc.negatifs + p.negatifs,
+                  neutres: acc.neutres + p.neutres,
+                }),
+                { positifs: 0, negatifs: 0, neutres: 0 }
+              );
+              const total = globalStats.positifs + globalStats.negatifs + globalStats.neutres;
+              const pieData = [
+                { name: "Positif", value: globalStats.positifs },
+                { name: "Neutre", value: globalStats.neutres },
+                { name: "Négatif", value: globalStats.negatifs },
+              ].filter((item) => item.value > 0);
 
-          <div className="glass-card p-6 rounded-xl hover-lift">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">Prix Moyen</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {stats.averagePrice.toFixed(2)} DT
-                </p>
-              </div>
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <TrendingUp className="text-purple-600" size={32} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="glass-card rounded-xl p-6 lg:p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Actions rapides</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button
-              onClick={() => router.push("/commandes")}
-              className="flex items-center justify-center gap-3 bg-indigo-600 text-white px-6 py-4 rounded-lg hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md"
-            >
-              <Package size={20} />
-              <span className="font-medium">Suivre les commandes</span>
-            </button>
-            <button
-              onClick={() => router.push("/products")}
-              className="flex items-center justify-center gap-3 bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md"
-            >
-              <Package size={20} />
-              <span className="font-medium">Gérer les produits</span>
-            </button>
-            <button
-              onClick={() => router.push("/categories")}
-              className="flex items-center justify-center gap-3 bg-emerald-600 text-white px-6 py-4 rounded-lg hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md"
-            >
-              <Tag size={20} />
-              <span className="font-medium">Gérer les catégories</span>
-            </button>
-            <button
-              onClick={() => router.push("/commentaires")}
-              className="flex items-center justify-center gap-3 bg-pink-600 text-white px-6 py-4 rounded-lg hover:bg-pink-700 transition-all shadow-sm hover:shadow-md"
-            >
-              <MessageSquare size={20} />
-              <span className="font-medium">Modérer les avis</span>
-            </button>
-            <button
-              onClick={() => router.push("/dashboard/sentiments")}
-              className="flex items-center justify-center gap-3 bg-purple-600 text-white px-6 py-4 rounded-lg hover:bg-purple-700 transition-all shadow-sm hover:shadow-md"
-            >
-              <PieChartIcon size={20} />
-              <span className="font-medium">Analyse des sentiments</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Camembert global des sentiments et Alertes */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Camembert global */}
-          {productSentimentStats.length > 0 && (() => {
-            const globalStats = productSentimentStats.reduce(
-              (acc, p) => ({
-                positifs: acc.positifs + p.positifs,
-                negatifs: acc.negatifs + p.negatifs,
-                neutres: acc.neutres + p.neutres,
-              }),
-              { positifs: 0, negatifs: 0, neutres: 0 }
-            );
-            const total = globalStats.positifs + globalStats.negatifs + globalStats.neutres;
-            const pieData = [
-              { name: "Positif", value: globalStats.positifs, percent: total > 0 ? (globalStats.positifs / total) * 100 : 0 },
-              { name: "Neutre", value: globalStats.neutres, percent: total > 0 ? (globalStats.neutres / total) * 100 : 0 },
-              { name: "Négatif", value: globalStats.negatifs, percent: total > 0 ? (globalStats.negatifs / total) * 100 : 0 },
-            ].filter((item) => item.value > 0);
-
-            return (
-              <div className="glass-card p-6 rounded-2xl hover-lift">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Répartition globale des sentiments</h2>
-                {pieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+              return (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={pieData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${percent.toFixed(1)}%`}
-                        outerRadius={100}
-                        fill="#8884d8"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
                         dataKey="value"
                       >
                         {pieData.map((entry, index) => {
-                          const colorKey =
-                            entry.name === "Positif"
-                              ? "positif"
-                              : entry.name === "Neutre"
-                              ? "neutre"
-                              : "negatif";
-                          return (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={SENTIMENT_COLORS[colorKey as keyof typeof SENTIMENT_COLORS]}
-                            />
-                          );
+                          const colorKey = entry.name === "Positif" ? "positif" : entry.name === "Neutre" ? "neutre" : "negatif";
+                          return <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[colorKey]} stroke="none" />;
                         })}
                       </Pie>
-                      <Tooltip />
-                      <Legend />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: '0px', boxShadow: 'none' }}
+                        itemStyle={{ color: '#000', fontSize: '12px', textTransform: 'uppercase' }}
+                      />
+                      <Legend iconType="circle" />
                     </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-64 flex items-center justify-center text-gray-400">
-                    <p>Aucune donnée disponible</p>
-                  </div>
-                )}
-                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-green-600">{globalStats.positifs}</p>
-                    <p className="text-sm text-gray-600">Positifs</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-yellow-600">{globalStats.neutres}</p>
-                    <p className="text-sm text-gray-600">Neutres</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-red-600">{globalStats.negatifs}</p>
-                    <p className="text-sm text-gray-600">Négatifs</p>
-                  </div>
                 </div>
+              );
+            })() : (
+              <div className="h-[300px] flex items-center justify-center text-gray-400 bg-gray-50">
+                Pas de données
               </div>
-            );
-          })()}
+            )}
+          </div>
 
-          {/* Alertes produits à surveiller */}
-          {(() => {
-            const alertProducts = productSentimentStats.filter(
-              (p) => p.total >= 5 && p.negatifPercent >= 40
-            );
-            return alertProducts.length > 0 ? (
-              <div className="glass-card p-6 rounded-2xl border-l-4 border-red-500 hover-lift">
-                <div className="flex items-center gap-3 mb-4">
-                  <AlertTriangle className="text-red-600" size={24} />
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Produits à surveiller ({alertProducts.length})
-                  </h2>
-                </div>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {alertProducts.slice(0, 5).map((product) => (
-                    <div
-                      key={product.produitId}
-                      className="p-4 glass-button rounded-xl bg-red-50 border border-red-200 hover-lift"
-                    >
-                      <p className="font-bold text-gray-900 mb-1">{product.nom}</p>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">
-                          {product.total} avis • {product.negatifPercent.toFixed(1)}% négatifs
-                        </span>
-                        <span className="text-red-600 font-semibold">
-                          Score: {product.scoreGlobal.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  {alertProducts.length > 5 && (
-                    <button
-                      onClick={() => router.push("/dashboard/sentiments")}
-                      className="w-full p-3 glass-button rounded-xl text-blue-600 font-semibold hover:bg-blue-50 transition"
-                    >
-                      Voir tous les produits ({alertProducts.length})
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : null;
-          })()}
+          {/* Price Distribution */}
+          <div>
+            <h2 className="text-xl font-serif font-medium mb-6 border-b border-gray-100 pb-4">Distribution des Prix</h2>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={products.slice(0, 8)}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="nom" hide />
+                  <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: '0px' }}
+                  />
+                  <Bar dataKey="prix" fill="#000000" radius={[0, 0, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Score Distribution */}
+          <div className="lg:col-span-2">
+            <h2 className="text-xl font-serif font-medium mb-6 border-b border-gray-100 pb-4">Score Moyen par Produit</h2>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={products.slice(0, 8)}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="nom" hide />
+                  <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} domain={[0, 5]} />
+                  <Tooltip
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: '0px' }}
+                  />
+                  <Bar dataKey="score_moyen" fill="#000000" radius={[4, 4, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
-        {/* Charts */}
-        {Array.isArray(products) && products.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-            {/* Prix des produits */}
-            <div className="glass-card p-6 rounded-xl">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Prix des Produits</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={Array.isArray(products) ? products.slice(0, 10) : []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="nom" stroke="#64748b" fontSize={12} />
-                  <YAxis stroke="#64748b" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#ffffff', 
-                      border: '1px solid #e2e8f0', 
-                      borderRadius: '0.5rem',
-                      padding: '0.5rem'
-                    }} 
-                  />
-                  <Legend />
-                  <Bar dataKey="prix" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Scores moyens */}
-            <div className="glass-card p-6 rounded-xl">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Scores Moyens</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={Array.isArray(products) ? products.slice(0, 10) : []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="nom" stroke="#64748b" fontSize={12} />
-                  <YAxis domain={[0, 5]} stroke="#64748b" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#ffffff', 
-                      border: '1px solid #e2e8f0', 
-                      borderRadius: '0.5rem',
-                      padding: '0.5rem'
-                    }} 
-                  />
-                  <Legend />
-                  <Bar dataKey="score_moyen" fill="#10b981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        {/* Recent Orders Table */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-serif font-medium">Commandes Récentes</h2>
+            <button onClick={() => router.push("/commandes")} className="text-sm font-medium underline underline-offset-4 hover:text-gray-600">
+              Voir tout
+            </button>
           </div>
-        )}
 
-        {/* Recent Products */}
-        <div className="glass-card rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Produits Récents</h2>
-          </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Nom</th>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Catégorie</th>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Prix</th>
-                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Score</th>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Client</th>
+                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Date</th>
+                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Montant</th>
+                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Statut</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {Array.isArray(products) && products.length > 0 ? (
-                  products.slice(0, 5).map((product) => (
-                    <tr key={product._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-6 font-medium text-gray-900">{product.nom}</td>
-                      <td className="py-4 px-6 text-gray-600">{product.categorie?.nom || "—"}</td>
-                      <td className="py-4 px-6 text-gray-900 font-semibold">{product.prix?.toFixed(2) || "0.00"} DT</td>
-                      <td className="py-4 px-6">
-                        <span className="inline-flex items-center gap-1 text-gray-700">
-                          {product.score_moyen?.toFixed(1) || "0.0"} ⭐
+              <tbody className="divide-y divide-gray-100">
+                {recentOrders.length > 0 ? (
+                  recentOrders.map((order) => (
+                    <tr key={order._id} className="group hover:bg-gray-50 transition-colors">
+                      <td className="py-4">
+                        <div className="font-medium">{order.utilisateur?.username || "—"}</div>
+                        <div className="text-xs text-gray-500">{order.utilisateur?.email}</div>
+                      </td>
+                      <td className="py-4 text-sm text-gray-600">
+                        {new Date(order.dateCommande).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td className="py-4 font-medium">
+                        {order.montantTotal?.toFixed(2)} DT
+                      </td>
+                      <td className="py-4">
+                        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium uppercase tracking-wide border ${order.statut === "livré" ? "border-green-200 text-green-700 bg-green-50" :
+                          order.statut === "annulé" ? "border-red-200 text-red-700 bg-red-50" :
+                            "border-gray-200 text-gray-700 bg-gray-50"
+                          }`}>
+                          {order.statut?.replace("_", " ")}
                         </span>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center text-gray-500">
-                      Aucun produit disponible
-                    </td>
+                    <td colSpan={4} className="py-8 text-center text-gray-400">Aucune commande récente</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        {/* Recent Orders */}
-        <div className="glass-card rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Commandes récentes</h2>
-              <p className="text-sm text-gray-600 mt-1">Dernières commandes passées sur la boutique.</p>
-            </div>
-            <button
-              onClick={() => router.push("/commandes")}
-              className="text-blue-600 hover:text-blue-700 text-sm font-semibold transition-colors"
-            >
-              Voir tout →
-            </button>
-          </div>
-          {recentOrders.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <p>Aucune commande enregistrée pour le moment.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Client</th>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Montant</th>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Statut</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {recentOrders.map((order) => (
-                    <tr key={order._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-6">
-                        <p className="font-semibold text-gray-900">{order.utilisateur?.username || "—"}</p>
-                        <p className="text-sm text-gray-500">{order.utilisateur?.email}</p>
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-600">
-                        {new Date(order.dateCommande).toLocaleDateString("fr-FR")}
-                      </td>
-                      <td className="py-4 px-6 font-semibold text-gray-900">
-                        {order.montantTotal?.toFixed(2)} DT
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 capitalize">
-                          {order.statut?.replace("_", " ")}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {/* AI Alerts Section (Moved to bottom) */}
+        <AIAlertsTable sentimentStats={productSentimentStats} />
       </main>
     </div>
   );

@@ -1,6 +1,8 @@
 // app/api/products/route.ts
 import { dbConnect } from "@/lib/mongodb";
 import Produit from "@/models/Produit";
+import Categorie from "@/models/Categorie";
+import User from "@/models/User";
 import jwt from "jsonwebtoken";
 
 // GET tous les produits

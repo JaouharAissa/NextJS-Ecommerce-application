@@ -94,7 +94,7 @@ export default function SentimentsPage() {
     <div className="min-h-screen bg-pattern">
       <AdminNavbar />
 
-          <main className="container-main pb-16 pt-20 lg:pt-24 space-y-12 lg:space-y-16">
+      <main className="container-main pb-16 pt-20 lg:pt-24 space-y-12 lg:space-y-16">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
@@ -106,10 +106,10 @@ export default function SentimentsPage() {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Analyse des sentiments par produit
+                Product Sentiment Analysis
               </h1>
               <p className="text-gray-600 mt-1">
-                Visualisez la répartition des avis pour chaque produit
+                Visualize review distribution for each product
               </p>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function SentimentsPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-                placeholder="Tapez le nom d'un produit pour voir ses statistiques..."
+              placeholder="Type a product name to see stats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 glass-card border-0 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 placeholder-gray-500"
@@ -133,7 +133,7 @@ export default function SentimentsPage() {
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="text-red-600" size={24} />
               <h2 className="text-xl font-bold text-gray-900">
-                Produits à surveiller ({productStats.filter((p) => p.total >= 5 && p.negatifPercent >= 40).length})
+                Products to Watch ({productStats.filter((p) => p.total >= 5 && p.negatifPercent >= 40).length})
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -146,7 +146,7 @@ export default function SentimentsPage() {
                   >
                     <p className="font-bold text-gray-900 mb-1">{product.nom}</p>
                     <p className="text-sm text-gray-600">
-                      {product.total} avis • {product.negatifPercent.toFixed(1)}% négatifs
+                      {product.total} reviews • {product.negatifPercent.toFixed(1)}% negative
                     </p>
                     <p className="text-xs text-red-600 font-medium mt-2">
                       Score: {product.scoreGlobal.toFixed(2)}
@@ -161,16 +161,16 @@ export default function SentimentsPage() {
         {filteredProducts.length === 0 ? (
           <div className="glass-card p-12 text-center rounded-2xl">
             <p className="text-lg text-gray-600 font-medium">
-              {searchQuery ? "Aucun produit trouvé" : "Aucun produit avec des commentaires"}
+              {searchQuery ? "No products found" : "No products with comments"}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProducts.map((product) => {
               const pieData = [
-                { name: "Positif", value: product.positifs, percent: product.positifPercent },
-                { name: "Neutre", value: product.neutres, percent: product.neutrePercent },
-                { name: "Négatif", value: product.negatifs, percent: product.negatifPercent },
+                { name: "Positive", value: product.positifs },
+                { name: "Neutral", value: product.neutres },
+                { name: "Negative", value: product.negatifs },
               ].filter((item) => item.value > 0);
 
               return (
@@ -189,7 +189,7 @@ export default function SentimentsPage() {
                     )}
                     <h3 className="font-bold text-lg text-gray-900">{product.nom}</h3>
                     <p className="text-sm text-gray-600">
-                      {product.total} avis • Note moyenne: {product.noteMoyenne?.toFixed(1) || "0.0"} ⭐
+                      {product.total} reviews • Avg Rating: {product.noteMoyenne?.toFixed(1) || "0.0"} ⭐
                     </p>
                   </div>
 
@@ -203,7 +203,7 @@ export default function SentimentsPage() {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ name, percent }) =>
+                            label={({ name, percent }: any) =>
                               `${name}: ${(percent * 100).toFixed(0)}%`
                             }
                             outerRadius={80}
@@ -212,11 +212,11 @@ export default function SentimentsPage() {
                           >
                             {pieData.map((entry, index) => {
                               const colorKey =
-                                entry.name === "Positif"
+                                entry.name === "Positive"
                                   ? "positif"
-                                  : entry.name === "Neutre"
-                                  ? "neutre"
-                                  : "negatif";
+                                  : entry.name === "Neutral"
+                                    ? "neutre"
+                                    : "negatif";
                               return (
                                 <Cell
                                   key={`cell-${index}`}
@@ -232,40 +232,39 @@ export default function SentimentsPage() {
                     </div>
                   ) : (
                     <div className="h-64 flex items-center justify-center text-gray-400">
-                      <p>Aucune donnée</p>
+                      <p>No data</p>
                     </div>
                   )}
 
                   {/* Stats */}
                   <div className="space-y-2 pt-4 border-t border-gray-200">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Positifs:</span>
+                      <span className="text-gray-600">Positive:</span>
                       <span className="font-semibold text-green-600">
                         {product.positifPercent.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Neutres:</span>
+                      <span className="text-gray-600">Neutral:</span>
                       <span className="font-semibold text-yellow-600">
                         {product.neutrePercent.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Négatifs:</span>
+                      <span className="text-gray-600">Negative:</span>
                       <span className="font-semibold text-red-600">
                         {product.negatifPercent.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-gray-200">
-                      <span className="font-bold text-gray-900">Score global:</span>
+                      <span className="font-bold text-gray-900">Global Score:</span>
                       <span
-                        className={`font-bold ${
-                          product.scoreGlobal >= 0.5
-                            ? "text-green-600"
-                            : product.scoreGlobal >= 0
+                        className={`font-bold ${product.scoreGlobal >= 0.5
+                          ? "text-green-600"
+                          : product.scoreGlobal >= 0
                             ? "text-yellow-600"
                             : "text-red-600"
-                        }`}
+                          }`}
                       >
                         {product.scoreGlobal.toFixed(2)}
                       </span>

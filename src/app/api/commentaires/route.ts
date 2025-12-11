@@ -1,6 +1,7 @@
 import { dbConnect } from "@/lib/mongodb";
 import Commentaire from "@/models/Commentaire";
 import Produit from "@/models/Produit";
+import User from "@/models/User"; // Register User model
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 

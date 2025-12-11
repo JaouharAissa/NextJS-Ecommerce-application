@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogIn, Mail, Lock, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -46,90 +47,73 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pattern p-4">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md">
-        <div className="glass-card bg-white/90 text-slate-900 p-8 md:p-10 space-y-6 shadow-2xl">
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-full mb-2">
-              <LogIn size={28} className="text-blue-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">Connexion</h1>
-            <p className="text-gray-600">Bienvenue sur ShopStyle</p>
+        <div className="text-center mb-12">
+          <Link href="/" className="text-2xl font-serif font-bold tracking-tight text-black">
+            FreshFits
+          </Link>
+        </div>
+
+        <div className="space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-medium uppercase tracking-wider">Connexion</h1>
+            <p className="text-sm text-gray-500">Accédez à votre espace personnel</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-gray-500">
                 Email
               </label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="email"
-                  placeholder="Entrez votre adresse email"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
+              <input
+                type="email"
+                placeholder="votre@email.com"
+                className="w-full border-b border-gray-300 py-3 text-sm focus:border-black focus:outline-none transition-colors bg-transparent placeholder:text-gray-300"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-gray-500">
                 Mot de passe
               </label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="password"
-                  placeholder="Entrez votre mot de passe"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="w-full border-b border-gray-300 py-3 text-sm focus:border-black focus:outline-none transition-colors bg-transparent placeholder:text-gray-300"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+              />
             </div>
 
             {message && (
-              <div className={`p-4 rounded-xl flex items-center gap-3 ${
-                message.includes("failed") || message.includes("error") || message.includes("Error")
-                  ? "bg-red-50 text-red-700 border border-red-200"
-                  : "bg-green-50 text-green-700 border border-green-200"
-              }`}>
-                <AlertCircle size={18} />
-                <span className="text-sm font-medium">{message}</span>
+              <div className="p-3 bg-gray-50 text-xs text-red-600 flex items-center gap-2">
+                <AlertCircle size={14} />
+                <span>{message}</span>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+              className="w-full bg-black text-white py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                  Connexion...
-                </>
-              ) : (
-                <>
-                  <LogIn size={20} />
-                  Se connecter
-                </>
-              )}
+              {isLoading ? "Connexion..." : "Se connecter"}
             </button>
           </form>
 
-          <div className="pt-6 border-t border-gray-200">
-            <p className="text-sm text-center text-gray-600">
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
               Pas encore de compte ?{" "}
-              <a href="/register" className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-colors">
+              <Link href="/register" className="text-black underline underline-offset-4 hover:text-gray-600 transition-colors">
                 Créer un compte
-              </a>
+              </Link>
             </p>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/mongodb";
 import { generateInvoicePdf } from "@/lib/invoice";
 import Commande from "@/models/Commande";
 import Produit from "@/models/Produit";
+import User from "@/models/User";
 import jwt from "jsonwebtoken";
 
 type MethodePaiement = "especes" | "carte" | "paypal";
@@ -164,10 +165,10 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Error creating commande:", error);
     return new Response(
-      JSON.stringify({ 
-        error: "Server error", 
-        details: error instanceof Error ? error.message : "Unknown error" 
-      }), 
+      JSON.stringify({
+        error: "Server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
       { status: 500 }
     );
   }

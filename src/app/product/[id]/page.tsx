@@ -1,22 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MessageSquare, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingBag, Star, ArrowLeft, MessageSquare, Send, User, X, Check } from "lucide-react";
+import Navbar from "@/app/components/Navbar";
 
-interface ProduitDetail {
-  _id: string;
-  nom: string;
-  description: string;
-  images: string[];
-  prix: number;
-  score_moyen: number;
-  categorie?: {
-    nom: string;
-  };
-}
-
-interface Commentaire {
+interface Comment {
   _id: string;
   contenu: string;
   note: number;
@@ -26,8 +15,19 @@ interface Commentaire {
     _id: string;
     username: string;
     email: string;
-    role?: string;
   };
+}
+
+interface Product {
+  _id: string;
+  nom: string;
+  description: string;
+  prix: number;
+  images: string[];
+  categorie?: {
+    nom: string;
+  };
+  score_moyen: number;
 }
 
 const decodeToken = (token: string) => {
@@ -40,113 +40,121 @@ const decodeToken = (token: string) => {
   }
 };
 
-const StarDisplay = ({ value }: { value: number }) => (
-  <div className="flex items-center space-x-1">
-    {[1, 2, 3, 4, 5].map((index) => (
-      <Star
-        key={index}
-        size={18}
-        className={index <= value ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
-      />
-    ))}
-  </div>
-);
-
-export default function ProductDetailPage() {
-  const params = useParams<{ id: string }>();
+export default function ProductPage() {
+  const { id } = useParams();
   const router = useRouter();
-  const produitId = params?.id;
 
-  const [product, setProduct] = useState<ProduitDetail | null>(null);
-  const [comments, setComments] = useState<Commentaire[]>([]);
+  // Data state
+  const [product, setProduct] = useState<Product | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formLoading, setFormLoading] = useState(false);
+
+  // User state
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // UI state
+  const [selectedImage, setSelectedImage] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  // Comment form state
   const [newComment, setNewComment] = useState("");
-  const [newRating, setNewRating] = useState(5);
+  const [rating, setRating] = useState(5);
+  const [submitting, setSubmitting] = useState(false);
 
+  // Edit comment state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [editingRating, setEditingRating] = useState(5);
 
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Image gallery state
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  // Links for Navbar
+  const links = [
+    { name: "Accueil", href: "/" },
+    { name: "Boutique", href: "/home" },
+    { name: "Contact", href: "/contact" },
+  ];
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-      return;
+    if (token) {
+      const decoded = decodeToken(token);
+      if (decoded) {
+        setUserRole(decoded.role);
+        setUserId(decoded.userId);
+      }
     }
 
-    const role = localStorage.getItem("role");
-    setUserRole(role);
-    const decoded = decodeToken(token);
-    if (decoded?.userId) {
-      setUserId(decoded.userId);
+    if (id) {
+      loadData();
     }
+  }, [id]);
 
-    if (!produitId) return;
-
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchProduct(), fetchComments()]);
-      setLoading(false);
-    };
-
-    loadData();
-  }, [produitId, router]);
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([fetchProduct(), fetchComments()]);
+    setLoading(false);
+  };
 
   const fetchProduct = async () => {
-    if (!produitId) return;
     try {
-      const res = await fetch(`/api/products/${produitId}`);
-      if (!res.ok) {
-        throw new Error("Produit introuvable");
-      }
-      const data: any = await res.json();
+      const res = await fetch(`/api/products/${id}`);
+      if (!res.ok) throw new Error("Produit non trouvé");
+      const data = await res.json();
 
-      // Handle migration from single image to images array
-      const normalizedProduct: ProduitDetail = {
+      // Ensure images is an array
+      const normalizedProduct = {
         ...data,
-        images: data.images || (data.image ? [data.image] : ["/placeholder.jpg"]),
+        images: data.images && data.images.length > 0 ? data.images : (data.image ? [data.image] : []),
       };
 
       setProduct(normalizedProduct);
     } catch (error) {
       console.error("Error fetching product:", error);
-      setFeedback("Impossible de charger le produit.");
     }
   };
 
   const fetchComments = async () => {
-    if (!produitId) return;
     try {
-      const res = await fetch(`/api/commentaires?produitId=${produitId}`);
-      if (!res.ok) {
-        throw new Error("Erreur chargement commentaires");
+      const res = await fetch(`/api/commentaires?produitId=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setComments(data);
       }
-      const data: Commentaire[] = await res.json();
-      setComments(data);
     } catch (error) {
-      console.error(error);
-      setFeedback("Impossible de charger les commentaires.");
+      console.error("Error fetching comments:", error);
     }
   };
 
-  const handleCreate = async () => {
-    if (!newComment.trim()) {
-      setFeedback("Veuillez écrire un commentaire.");
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existingItem = cart.find((item: any) => item._id === product._id);
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({ ...product, quantity: 1 });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("storage"));
+    alert("Produit ajouté au panier");
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/login");
       return;
     }
+
+    if (!newComment.trim()) return;
+
+    setSubmitting(true);
     try {
-      setFormLoading(true);
-      setFeedback(null);
-      const token = localStorage.getItem("token");
       const res = await fetch("/api/commentaires", {
         method: "POST",
         headers: {
@@ -154,29 +162,27 @@ export default function ProductDetailPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          produitId,
-          contenu: newComment.trim(),
-          note: newRating,
+          produitId: id,
+          contenu: newComment,
+          note: rating,
         }),
       });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Impossible d'ajouter le commentaire");
+      if (res.ok) {
+        setNewComment("");
+        setRating(5);
+        await Promise.all([fetchComments(), fetchProduct()]);
+        setFeedback("Commentaire ajouté !");
+        setTimeout(() => setFeedback(null), 3000);
       }
-
-      setNewComment("");
-      setNewRating(5);
-      await Promise.all([fetchComments(), fetchProduct()]);
-      setFeedback("Commentaire ajouté !");
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Erreur inconnue");
+      console.error("Error posting comment:", error);
     } finally {
-      setFormLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const startEdit = (comment: Commentaire) => {
+  const startEdit = (comment: Comment) => {
     setEditingId(comment._id);
     setEditingContent(comment.contenu);
     setEditingRating(comment.note);
@@ -190,14 +196,9 @@ export default function ProductDetailPage() {
 
   const submitEdit = async () => {
     if (!editingId) return;
-    if (!editingContent.trim()) {
-      setFeedback("Le commentaire ne peut pas être vide.");
-      return;
-    }
 
+    const token = localStorage.getItem("token");
     try {
-      setFormLoading(true);
-      const token = localStorage.getItem("token");
       const res = await fetch(`/api/commentaires/${editingId}`, {
         method: "PUT",
         headers: {
@@ -205,317 +206,252 @@ export default function ProductDetailPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          contenu: editingContent.trim(),
+          contenu: editingContent,
           note: editingRating,
         }),
       });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Impossible de modifier le commentaire");
+      if (res.ok) {
+        cancelEdit();
+        await Promise.all([fetchComments(), fetchProduct()]);
+        setFeedback("Commentaire mis à jour !");
+        setTimeout(() => setFeedback(null), 3000);
       }
-
-      cancelEdit();
-      await Promise.all([fetchComments(), fetchProduct()]);
-      setFeedback("Commentaire mis à jour.");
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Erreur inconnue");
-    } finally {
-      setFormLoading(false);
+      console.error("Error updating comment:", error);
     }
   };
 
   const handleDelete = async (commentId: string) => {
     if (!confirm("Supprimer ce commentaire ?")) return;
+
+    const token = localStorage.getItem("token");
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch(`/api/commentaires/${commentId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Impossible de supprimer le commentaire");
+
+      if (res.ok) {
+        await Promise.all([fetchComments(), fetchProduct()]);
+        setFeedback("Commentaire supprimé.");
+        setTimeout(() => setFeedback(null), 3000);
       }
-      await Promise.all([fetchComments(), fetchProduct()]);
-      setFeedback("Commentaire supprimé.");
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Erreur inconnue");
+      console.error("Error deleting comment:", error);
     }
   };
 
-  const canInteract = useMemo(() => userRole !== "admin", [userRole]);
-
-  const nextImage = () => {
-    if (!product?.images) return;
-    setSelectedImageIndex((prev) => (prev + 1) % product.images.length);
-  };
-
-  const prevImage = () => {
-    if (!product?.images) return;
-    setSelectedImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
-  };
-
-  if (loading || !product) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-black" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black"></div>
       </div>
     );
   }
 
-  const renderInteractiveStars = (value: number, onChange: (note: number) => void) => (
-    <div className="flex items-center space-x-1">
-      {[1, 2, 3, 4, 5].map((index) => (
-        <button
-          type="button"
-          key={index}
-          onClick={() => onChange(index)}
-          className="focus:outline-none hover:scale-110 transition"
-        >
-          <Star
-            size={24}
-            className={index <= value ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
-          />
-        </button>
-      ))}
-    </div>
-  );
-
-  const productImages = product.images && product.images.length > 0 ? product.images : ["/placeholder.jpg"];
+  if (!product) return null;
 
   return (
-    <div className="min-h-screen bg-pattern pb-16">
-      <div className="container-main py-6 lg:py-8">
+    <div className="min-h-screen bg-white text-black font-sans">
+
+
+      <main className="container-main pt-24 pb-16">
         <button
-          className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6 font-medium transition-colors"
-          onClick={() => router.push("/home")}
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm uppercase tracking-wider text-gray-500 hover:text-black transition-colors mb-8"
         >
-          <ArrowLeft size={18} className="mr-2" />
-          Retour à la boutique
+          <ArrowLeft size={16} />
+          Retour
         </button>
 
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Image Gallery */}
-            <div className="p-6">
-              <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-4 group">
-                <img
-                  src={productImages[selectedImageIndex]}
-                  alt={`${product.nom} - Image ${selectedImageIndex + 1}`}
-                  className="w-full h-full object-cover"
-                />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+          {/* Image Gallery */}
+          <div className="space-y-4">
+            <div className="aspect-[3/4] w-full bg-gray-100 overflow-hidden">
+              <img
+                src={product.images[selectedImage]}
+                alt={product.nom}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-4">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`aspect-[3/4] w-full bg-gray-100 overflow-hidden transition-all ${selectedImage === idx ? "ring-1 ring-black" : "opacity-70 hover:opacity-100"
+                      }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-                {/* Navigation Arrows - only show if multiple images */}
-                {productImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition"
-                    >
-                      <ChevronLeft size={24} />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition"
-                    >
-                      <ChevronRight size={24} />
-                    </button>
-
-                    {/* Image counter */}
-                    <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1.5 rounded-full text-sm font-medium">
-                      {selectedImageIndex + 1} / {productImages.length}
-                    </div>
-                  </>
-                )}
+          {/* Product Info */}
+          <div className="flex flex-col h-full">
+            <div className="border-b border-gray-200 pb-8 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                  {product.categorie?.nom}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Star size={14} className="fill-black text-black" />
+                  <span className="text-sm font-medium">{product.score_moyen?.toFixed(1) || "0.0"}</span>
+                  <span className="text-xs text-gray-400">({comments.length} avis)</span>
+                </div>
               </div>
 
-              {/* Thumbnail Gallery */}
-              {productImages.length > 1 && (
-                <div className="grid grid-cols-5 gap-3">
-                  {productImages.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImageIndex(index)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 transition ${selectedImageIndex === index
-                          ? "border-black"
-                          : "border-gray-200 hover:border-gray-400"
-                        }`}
-                    >
-                      <img
-                        src={img}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
+              <h1 className="text-4xl font-serif font-medium mb-4">{product.nom}</h1>
+              <p className="text-2xl font-light mb-6">{product.prix.toFixed(2)} DT</p>
+
+              <p className="text-gray-600 leading-relaxed text-sm">
+                {product.description}
+              </p>
             </div>
 
-            {/* Product Info */}
-            <div className="p-8 flex flex-col space-y-6">
-              <div>
-                <span className="text-sm uppercase tracking-wider text-gray-500 font-semibold">
-                  {product.categorie?.nom || "Produit"}
-                </span>
-                <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">{product.nom}</h1>
-                <p className="text-gray-600 leading-relaxed text-lg">{product.description}</p>
-              </div>
-
-              <div className="flex items-center gap-6 py-4 border-y border-gray-200">
-                <div className="flex items-center gap-2">
-                  <StarDisplay value={Math.round(product.score_moyen || 0)} />
-                  <span className="text-sm text-gray-600 font-medium">
-                    {product.score_moyen?.toFixed(1) || "0.0"} / 5
-                  </span>
-                </div>
-                <span className="text-sm text-gray-500">
-                  {comments.length} avis
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold text-gray-900">{product.prix.toFixed(2)} DT</span>
-              </div>
-
+            <div className="space-y-6">
               <button
-                onClick={() => router.push("/home")}
-                className="w-full bg-black text-white py-4 rounded-xl font-semibold hover:bg-gray-800 transition text-lg"
+                onClick={handleAddToCart}
+                className="w-full bg-black text-white py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
               >
-                Retour à la boutique
+                <ShoppingBag size={18} />
+                Ajouter au panier
               </button>
+
+              <div className="grid grid-cols-3 gap-4 text-center text-xs uppercase tracking-wider text-gray-500 pt-8">
+                <div>Livraison Gratuite</div>
+                <div>Retour sous 30 jours</div>
+                <div>Paiement Sécurisé</div>
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <div className="mt-16 pt-16 border-t border-gray-200">
+              <h3 className="text-xl font-serif font-medium mb-8">Avis Clients</h3>
+
+              {feedback && (
+                <div className="mb-6 p-4 bg-gray-50 text-sm text-gray-600 flex items-center gap-2">
+                  <Check size={16} />
+                  {feedback}
+                </div>
+              )}
+
+              {/* Add Comment Form */}
+              <form onSubmit={handleSubmitComment} className="mb-12">
+                <div className="mb-4">
+                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">Votre note</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className="focus:outline-none"
+                      >
+                        <Star
+                          size={20}
+                          className={`${star <= rating ? "fill-black text-black" : "text-gray-300"
+                            } transition-colors`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Partagez votre expérience..."
+                    className="w-full border-b border-gray-300 py-3 pr-12 text-sm focus:border-black focus:outline-none transition-colors resize-none bg-transparent placeholder:text-gray-400"
+                    rows={1}
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || !newComment.trim()}
+                    className="absolute right-0 bottom-3 text-black disabled:text-gray-300 transition-colors"
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+              </form>
+
+              {/* Comments List */}
+              <div className="space-y-8">
+                {comments.length > 0 ? (
+                  comments.map((comment) => (
+                    <div key={comment._id} className="group">
+                      {editingId === comment._id ? (
+                        <div className="bg-gray-50 p-6 space-y-4">
+                          <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() => setEditingRating(star)}
+                                className="focus:outline-none"
+                              >
+                                <Star
+                                  size={16}
+                                  className={`${star <= editingRating ? "fill-black text-black" : "text-gray-300"
+                                    }`}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            value={editingContent}
+                            onChange={(e) => setEditingContent(e.target.value)}
+                            className="w-full bg-white border border-gray-200 p-3 text-sm focus:outline-none focus:border-black"
+                            rows={3}
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button onClick={cancelEdit} className="text-xs uppercase tracking-wider text-gray-500 hover:text-black">Annuler</button>
+                            <button onClick={submitEdit} className="text-xs uppercase tracking-wider text-black font-medium">Enregistrer</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{comment.utilisateur?.username || "Anonyme"}</span>
+                              <span className="text-xs text-gray-400">• {new Date(comment.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={12}
+                                  className={i < comment.note ? "fill-black text-black" : "text-gray-200"}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-gray-600 text-sm leading-relaxed">{comment.contenu}</p>
+
+                          {(userId === comment.utilisateur?._id || userRole === "admin") && (
+                            <div className="flex gap-3 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {userId === comment.utilisateur?._id && (
+                                <button onClick={() => startEdit(comment)} className="text-xs text-gray-400 hover:text-black">Modifier</button>
+                              )}
+                              <button onClick={() => handleDelete(comment._id)} className="text-xs text-gray-400 hover:text-red-600">Supprimer</button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-400 text-sm italic">Aucun avis pour le moment.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Comments Section */}
-        <section className="mt-12 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <MessageSquare size={28} className="text-black" />
-              Avis des clients
-            </h2>
-            <span className="text-sm text-gray-500 font-medium">{comments.length} commentaire(s)</span>
-          </div>
-
-          {feedback && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-5 py-3 rounded-xl">
-              {feedback}
-            </div>
-          )}
-
-          {canInteract && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 space-y-5 border border-gray-100">
-              <h3 className="text-xl font-semibold text-gray-900">Laisser un avis</h3>
-              {renderInteractiveStars(newRating, setNewRating)}
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Partagez votre expérience avec ce produit..."
-                rows={4}
-                className="w-full border border-gray-300 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-black transition"
-              />
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  disabled={formLoading}
-                  onClick={handleCreate}
-                  className="bg-black text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-800 transition disabled:bg-gray-400"
-                >
-                  {formLoading ? "Envoi..." : "Publier mon avis"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {comments.length === 0 && (
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <MessageSquare size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500 text-lg">Aucun commentaire pour le moment.</p>
-                <p className="text-gray-400 text-sm mt-2">Soyez le premier à partager votre avis !</p>
-              </div>
-            )}
-            {comments.map((comment) => {
-              const isOwner = comment.utilisateur?._id === userId;
-              const canDelete = isOwner || userRole === "admin";
-              return (
-                <div key={comment._id} className="bg-white rounded-2xl shadow-lg p-6 space-y-4 border border-gray-100">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900 text-lg">
-                        {comment.utilisateur?.username || "Utilisateur"}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(comment.createdAt).toLocaleDateString("fr-FR", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    {editingId !== comment._id && <StarDisplay value={comment.note} />}
-                  </div>
-
-                  {editingId === comment._id ? (
-                    <div className="space-y-4">
-                      {renderInteractiveStars(editingRating, setEditingRating)}
-                      <textarea
-                        value={editingContent}
-                        onChange={(e) => setEditingContent(e.target.value)}
-                        rows={3}
-                        className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-black focus:outline-none"
-                      />
-                      <div className="flex gap-3 justify-end">
-                        <button
-                          onClick={cancelEdit}
-                          className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
-                        >
-                          Annuler
-                        </button>
-                        <button
-                          onClick={submitEdit}
-                          className="px-6 py-2.5 rounded-xl bg-black text-white font-medium hover:bg-gray-800 transition"
-                          disabled={formLoading}
-                        >
-                          Enregistrer
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-gray-700 leading-relaxed text-base">{comment.contenu}</p>
-                      {(isOwner || canDelete) && (
-                        <div className="flex gap-3 justify-end text-sm pt-2 border-t border-gray-100">
-                          {isOwner && (
-                            <button
-                              onClick={() => startEdit(comment)}
-                              className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition"
-                            >
-                              Modifier
-                            </button>
-                          )}
-                          {canDelete && (
-                            <button
-                              onClick={() => handleDelete(comment._id)}
-                              className="px-4 py-2 rounded-lg border border-red-200 text-red-600 font-medium hover:bg-red-50 transition"
-                            >
-                              Supprimer
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      </div>
+      </main>
     </div>
   );
 }

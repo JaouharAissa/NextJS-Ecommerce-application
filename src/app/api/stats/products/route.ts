@@ -1,5 +1,7 @@
 import { dbConnect } from "@/lib/mongodb";
 import Commentaire from "@/models/Commentaire";
+import Produit from "@/models/Produit"; // Register Produit model
+import User from "@/models/User"; // Register User model
 import jwt from "jsonwebtoken";
 
 export async function GET(req: Request) {
@@ -54,22 +56,52 @@ export async function GET(req: Request) {
           noteMoyenne: 1,
           positifPercent: {
             $cond: [
-              { $gt: ["$total", 0] },
-              { $multiply: [{ $divide: ["$positifs", "$total"] }, 100] },
+              { $gt: [{ $add: ["$positifs", "$negatifs", "$neutres"] }, 0] },
+              {
+                $multiply: [
+                  {
+                    $divide: [
+                      "$positifs",
+                      { $add: ["$positifs", "$negatifs", "$neutres"] },
+                    ],
+                  },
+                  100,
+                ],
+              },
               0,
             ],
           },
           neutrePercent: {
             $cond: [
-              { $gt: ["$total", 0] },
-              { $multiply: [{ $divide: ["$neutres", "$total"] }, 100] },
+              { $gt: [{ $add: ["$positifs", "$negatifs", "$neutres"] }, 0] },
+              {
+                $multiply: [
+                  {
+                    $divide: [
+                      "$neutres",
+                      { $add: ["$positifs", "$negatifs", "$neutres"] },
+                    ],
+                  },
+                  100,
+                ],
+              },
               0,
             ],
           },
           negatifPercent: {
             $cond: [
-              { $gt: ["$total", 0] },
-              { $multiply: [{ $divide: ["$negatifs", "$total"] }, 100] },
+              { $gt: [{ $add: ["$positifs", "$negatifs", "$neutres"] }, 0] },
+              {
+                $multiply: [
+                  {
+                    $divide: [
+                      "$negatifs",
+                      { $add: ["$positifs", "$negatifs", "$neutres"] },
+                    ],
+                  },
+                  100,
+                ],
+              },
               0,
             ],
           },
@@ -77,10 +109,7 @@ export async function GET(req: Request) {
             $cond: [
               { $gt: ["$total", 0] },
               {
-                $divide: [
-                  { $subtract: ["$positifs", "$negatifs"] },
-                  "$total",
-                ],
+                $divide: [{ $subtract: ["$positifs", "$negatifs"] }, "$total"],
               },
               0,
             ],

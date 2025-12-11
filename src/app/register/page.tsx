@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -109,29 +110,30 @@ export default function RegisterPage() {
   const passwordStrength = password ? getPasswordStrength(password) : null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pattern p-4">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md">
-        <div className="glass-card bg-white/90 text-slate-900 p-8 md:p-10 shadow-2xl">
-          <div className="text-center mb-8 space-y-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-full mb-2">
-              <CheckCircle2 size={28} className="text-blue-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">Créer un compte</h1>
-            <p className="text-gray-600">Rejoignez ShopStyle dès aujourd'hui</p>
+        <div className="text-center mb-12">
+          <Link href="/" className="text-2xl font-serif font-bold tracking-tight text-black">
+            FreshFits
+          </Link>
+        </div>
+
+        <div className="space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-medium uppercase tracking-wider">Créer un compte</h1>
+            <p className="text-sm text-gray-500">Rejoignez notre communauté</p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-5">
+          <form onSubmit={handleRegister} className="space-y-6">
             {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-gray-500">
                 Nom d'utilisateur
               </label>
               <input
                 type="text"
-                placeholder="Choisissez un nom d'utilisateur unique"
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:ring-2 outline-none transition-all ${usernameError
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Votre nom d'utilisateur"
+                className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 ${usernameError ? "border-red-300" : "border-gray-300 focus:border-black"
                   }`}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -139,23 +141,19 @@ export default function RegisterPage() {
                 required
               />
               {usernameError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <XCircle size={14} /> {usernameError}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{usernameError}</p>
               )}
             </div>
 
             {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-gray-500">
                 Email
               </label>
               <input
                 type="email"
-                placeholder="Entrez votre adresse email valide"
-                className={`w-full px-4 py-3 border rounded-lg text-sm focus:ring-2 outline-none transition-all ${emailError
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="votre@email.com"
+                className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 ${emailError ? "border-red-300" : "border-gray-300 focus:border-black"
                   }`}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -163,24 +161,20 @@ export default function RegisterPage() {
                 required
               />
               {emailError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <XCircle size={14} /> {emailError}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{emailError}</p>
               )}
             </div>
 
             {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-gray-500">
                 Mot de passe
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Créez un mot de passe sécurisé (min. 8 caractères)"
-                  className={`w-full px-4 py-3 border rounded-lg text-sm focus:ring-2 outline-none transition-all pr-12 ${passwordError
-                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="••••••••"
+                  className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 pr-10 ${passwordError ? "border-red-300" : "border-gray-300 focus:border-black"
                     }`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -190,9 +184,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
 
@@ -200,14 +194,14 @@ export default function RegisterPage() {
               {password && passwordStrength && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Force du mot de passe:</span>
-                    <span className={`text-xs font-medium ${passwordStrength.label === "Fort" ? "text-green-600" :
-                        passwordStrength.label === "Moyen" ? "text-yellow-600" : "text-red-600"
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400">Force</span>
+                    <span className={`text-[10px] uppercase tracking-wider font-medium ${passwordStrength.label === "Fort" ? "text-green-600" :
+                      passwordStrength.label === "Moyen" ? "text-yellow-600" : "text-red-600"
                       }`}>
                       {passwordStrength.label}
                     </span>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-0.5 bg-gray-100 w-full">
                     <div
                       className={`h-full ${passwordStrength.color} transition-all duration-300`}
                       style={{ width: passwordStrength.width }}
@@ -217,24 +211,20 @@ export default function RegisterPage() {
               )}
 
               {passwordError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <XCircle size={14} /> {passwordError}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{passwordError}</p>
               )}
             </div>
 
             {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="space-y-1">
+              <label className="text-xs uppercase tracking-wider text-gray-500">
                 Confirmer le mot de passe
               </label>
               <div className="relative">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Créez un mot de passe sécurisé (min. 8 caractères)"
-                  className={`w-full px-4 py-3 border rounded-lg text-sm focus:ring-2 outline-none transition-all pr-12 ${confirmPasswordError
-                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="••••••••"
+                  className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 pr-10 ${confirmPasswordError ? "border-red-300" : "border-gray-300 focus:border-black"
                     }`}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -244,62 +234,45 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
                 >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {confirmPasswordError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <XCircle size={14} /> {confirmPasswordError}
-                </p>
-              )}
-              {!confirmPasswordError && confirmPassword && password === confirmPassword && (
-                <p className="mt-1 text-sm text-green-600 flex items-center gap-1">
-                  <CheckCircle2 size={14} /> Les mots de passe correspondent
-                </p>
+                <p className="text-xs text-red-500 mt-1">{confirmPasswordError}</p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+              className="w-full bg-black text-white py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-8"
             >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                  Inscription en cours...
-                </>
-              ) : (
-                "S'inscrire"
-              )}
+              {isLoading ? "Inscription..." : "S'inscrire"}
             </button>
 
             {message && (
-              <div className={`p-3 rounded-lg flex items-center gap-2 ${message.includes("réussie") || message.includes("successful")
-                  ? "bg-green-50 text-green-700 border border-green-200"
-                  : "bg-red-50 text-red-700 border border-red-200"
+              <div className={`p-3 text-xs flex items-center gap-2 ${message.includes("réussie") || message.includes("successful")
+                ? "bg-green-50 text-green-700"
+                : "bg-red-50 text-red-700"
                 }`}>
                 {message.includes("réussie") || message.includes("successful") ? (
-                  <CheckCircle2 size={18} />
+                  <CheckCircle2 size={14} />
                 ) : (
-                  <AlertCircle size={18} />
+                  <AlertCircle size={14} />
                 )}
-                <span className="text-sm">{message}</span>
+                <span>{message}</span>
               </div>
             )}
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
               Vous avez déjà un compte?{" "}
-              <button
-                onClick={() => router.push("/login")}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
+              <Link href="/login" className="text-black underline underline-offset-4 hover:text-gray-600 transition-colors">
                 Se connecter
-              </button>
+              </Link>
             </p>
           </div>
         </div>
