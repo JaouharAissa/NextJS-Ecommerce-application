@@ -154,15 +154,17 @@ export default function CommentairesAdminPage() {
         </div>
 
         <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="glass-input w-full pl-12"
-            />
+          <div className="max-w-md">
+            <div className="glass-input flex items-center gap-3">
+              <Search className="text-[var(--foreground-muted)] flex-shrink-0" size={18} />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-[var(--foreground-muted)]"
+              />
+            </div>
           </div>
           {error && <p className="text-sm text-[var(--error)] mt-2">{error}</p>}
         </div>

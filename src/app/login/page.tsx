@@ -76,15 +76,15 @@ export default function LoginPage() {
               <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
                 Email
               </label>
-              <div className="relative">
+              <div className="glass-input flex items-center gap-3">
                 <Mail
-                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${email ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  className={`text-[var(--foreground-muted)] flex-shrink-0 transition-all duration-300 ${email ? 'opacity-0 w-0' : 'opacity-100'}`}
                   size={18}
                 />
                 <input
                   type="email"
                   placeholder="your@email.com"
-                  className={`glass-input w-full transition-all duration-300 ${email ? 'pl-4' : 'pl-14'}`}
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-[var(--foreground-muted)]"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -98,15 +98,15 @@ export default function LoginPage() {
               <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
                 Password
               </label>
-              <div className="relative">
+              <div className="glass-input flex items-center gap-3">
                 <Lock
-                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${password ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  className={`text-[var(--foreground-muted)] flex-shrink-0 transition-all duration-300 ${password ? 'opacity-0 w-0' : 'opacity-100'}`}
                   size={18}
                 />
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`glass-input w-full pr-12 transition-all duration-300 ${password ? 'pl-4' : 'pl-14'}`}
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-[var(--foreground-muted)]"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -115,7 +115,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-white transition-colors"
+                  className="text-[var(--foreground-muted)] hover:text-white transition-colors flex-shrink-0"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -173,7 +173,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center mt-8 text-xs text-[var(--foreground-muted)]">
-          ©2024 FreshFits. Premium Streetwear.
+          ©2025 FreshFits. Premium Streetwear.
         </p>
       </div>
     </div>

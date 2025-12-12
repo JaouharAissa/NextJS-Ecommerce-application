@@ -117,15 +117,17 @@ export default function SentimentsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative w-full md:w-auto md:min-w-[300px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="glass-input w-full pl-12"
-            />
+          <div className="w-full md:w-auto md:min-w-[300px]">
+            <div className="glass-input flex items-center gap-3">
+              <Search className="text-[var(--foreground-muted)] flex-shrink-0" size={18} />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-[var(--foreground-muted)]"
+              />
+            </div>
           </div>
         </div>
 
@@ -148,9 +150,7 @@ export default function SentimentsPage() {
                   <p className="text-sm text-[var(--foreground-muted)]">
                     {product.total} reviews • {product.negatifPercent.toFixed(1)}% negative
                   </p>
-                  <p className="text-xs text-[var(--error)] font-medium mt-2">
-                    Score: {product.scoreGlobal.toFixed(2)}
-                  </p>
+
                 </div>
               ))}
             </div>
@@ -262,19 +262,7 @@ export default function SentimentsPage() {
                         {product.negatifPercent.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="flex justify-between pt-2 border-t border-[var(--glass-border)]">
-                      <span className="font-semibold text-white">Global Score:</span>
-                      <span
-                        className={`font-bold ${product.scoreGlobal >= 0.5
-                          ? "text-[var(--success)]"
-                          : product.scoreGlobal >= 0
-                            ? "text-[var(--warning)]"
-                            : "text-[var(--error)]"
-                          }`}
-                      >
-                        {product.scoreGlobal.toFixed(2)}
-                      </span>
-                    </div>
+
                   </div>
                 </div>
               );

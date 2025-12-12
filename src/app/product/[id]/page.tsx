@@ -112,22 +112,61 @@ export default function ProductPage() {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
 
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const existingItem = cart.find((item: any) => item._id === product._id);
-
-    if (existingItem) {
-      existingItem.quantity += 1;
-    } else {
-      cart.push({ ...product, quantity: 1 });
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
     }
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("storage"));
-    setFeedback("Added to cart!");
-    setTimeout(() => setFeedback(null), 3000);
+    try {
+      // D'abord récupérer le panier actuel
+      const getRes = await fetch("/api/cart", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      let currentCart = [];
+      if (getRes.ok) {
+        const data = await getRes.json();
+        currentCart = data.cart || [];
+      }
+
+      // Vérifier si le produit existe déjà dans le panier
+      const existingIndex = currentCart.findIndex(
+        (item: any) => item.produitId === product._id
+      );
+
+      if (existingIndex > -1) {
+        currentCart[existingIndex].quantite += 1;
+      } else {
+        currentCart.push({
+          produitId: product._id,
+          nom: product.nom,
+          image: product.images?.[0] || "",
+          prix: product.prix,
+          quantite: 1,
+        });
+      }
+
+      // Sauvegarder le panier mis à jour
+      await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ cart: currentCart })
+      });
+
+      setFeedback("Added to cart!");
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      setFeedback("Error adding to cart");
+      setTimeout(() => setFeedback(null), 3000);
+    }
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -247,9 +286,9 @@ export default function ProductPage() {
       <main className="container-main pt-8 pb-16">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm uppercase tracking-wider text-[var(--foreground-muted)] hover:text-white transition-colors mb-8 glass-button px-4 py-2 rounded-xl"
+          className="flex items-center gap-3 text-base uppercase tracking-wider text-[var(--foreground-muted)] hover:text-white transition-colors mb-8 glass-button px-6 py-3 rounded-2xl font-semibold"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={22} />
           Back
         </button>
 
@@ -270,8 +309,8 @@ export default function ProductPage() {
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
                     className={`aspect-[3/4] w-full rounded-xl overflow-hidden transition-all ${selectedImage === idx
-                        ? "ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-[var(--background)]"
-                        : "opacity-60 hover:opacity-100"
+                      ? "ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-[var(--background)]"
+                      : "opacity-60 hover:opacity-100"
                       }`}
                   >
                     <img src={img} alt="" className="w-full h-full object-cover" />
@@ -343,8 +382,8 @@ export default function ProductPage() {
                         <Star
                           size={24}
                           className={`${star <= rating
-                              ? "fill-[var(--warning)] text-[var(--warning)]"
-                              : "text-[var(--foreground-muted)]"
+                            ? "fill-[var(--warning)] text-[var(--warning)]"
+                            : "text-[var(--foreground-muted)]"
                             } transition-colors`}
                         />
                       </button>
@@ -387,8 +426,8 @@ export default function ProductPage() {
                                 <Star
                                   size={18}
                                   className={`${star <= editingRating
-                                      ? "fill-[var(--warning)] text-[var(--warning)]"
-                                      : "text-[var(--foreground-muted)]"
+                                    ? "fill-[var(--warning)] text-[var(--warning)]"
+                                    : "text-[var(--foreground-muted)]"
                                     }`}
                                 />
                               </button>

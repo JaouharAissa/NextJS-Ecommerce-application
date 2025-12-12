@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Trash2, ShoppingBag, Heart, Sparkles } from "lucide-react";
+import { Trash2, ShoppingBag, Heart, Sparkles, ArrowLeft } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
 
 interface Product {
@@ -96,6 +96,15 @@ export default function FavoritesPage() {
             <Navbar links={navLinks} />
 
             <main className="container-main py-12">
+                {/* Back Button */}
+                <button
+                    onClick={() => router.back()}
+                    className="flex items-center gap-3 text-base uppercase tracking-wider text-[var(--foreground-muted)] hover:text-white transition-colors mb-8 glass-button px-6 py-3 rounded-2xl font-semibold"
+                >
+                    <ArrowLeft size={22} />
+                    Back
+                </button>
+
                 {/* Header */}
                 <div className="mb-10">
                     <div className="flex items-center gap-3 mb-2">

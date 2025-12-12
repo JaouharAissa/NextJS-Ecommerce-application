@@ -52,8 +52,8 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
 
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled
-        ? "bg-[var(--background)]/90 backdrop-blur-xl border-b border-[var(--glass-border)]"
-        : "bg-transparent"
+      ? "bg-[var(--background)]/90 backdrop-blur-xl border-b border-[var(--glass-border)]"
+      : "bg-transparent"
       }`}>
       <div className="container-main h-20 flex items-center justify-between gap-8">
         {/* Mobile Menu Button */}
@@ -74,15 +74,17 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
 
         {/* Search Bar (Centered) */}
         {onSearch && (
-          <div className="hidden md:flex flex-1 max-w-md mx-auto relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
-            <input
-              type="text"
-              placeholder="Search products..."
-              className="w-full pl-12 pr-4 py-3 glass-input rounded-full text-sm"
-              value={searchValue || ""}
-              onChange={(e) => onSearch(e.target.value)}
-            />
+          <div className="hidden md:flex flex-1 max-w-md mx-auto">
+            <div className="glass-input flex items-center gap-3 w-full rounded-full">
+              <Search className="text-[var(--foreground-muted)] flex-shrink-0" size={18} />
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="flex-1 bg-transparent border-none outline-none text-white text-sm placeholder:text-[var(--foreground-muted)]"
+                value={searchValue || ""}
+                onChange={(e) => onSearch(e.target.value)}
+              />
+            </div>
           </div>
         )}
 
@@ -166,12 +168,12 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
           <div className="flex flex-col p-6 space-y-6">
             {/* Mobile Search */}
             {onSearch && (
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
+              <div className="glass-input flex items-center gap-3 rounded-xl">
+                <Search className="text-[var(--foreground-muted)] flex-shrink-0" size={18} />
                 <input
                   type="text"
                   placeholder="Search products..."
-                  className="w-full pl-12 pr-4 py-4 glass-input rounded-xl text-sm"
+                  className="flex-1 bg-transparent border-none outline-none text-white text-sm placeholder:text-[var(--foreground-muted)] py-1"
                   value={searchValue || ""}
                   onChange={(e) => onSearch(e.target.value)}
                 />

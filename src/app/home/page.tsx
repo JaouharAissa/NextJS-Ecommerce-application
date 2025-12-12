@@ -365,8 +365,8 @@ export default function HomePage() {
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 md:pb-0">
               <button
                 onClick={() => setSelectedCategory("all")}
-                className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === "all"
-                  ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white"
+                className={`px-8 py-4 rounded-2xl text-lg font-semibold whitespace-nowrap transition-all ${selectedCategory === "all"
+                  ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg"
                   : "glass-button hover:text-white"
                   }`}
               >
@@ -376,8 +376,8 @@ export default function HomePage() {
                 <button
                   key={cat._id}
                   onClick={() => setSelectedCategory(cat._id)}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === cat._id
-                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white"
+                  className={`px-8 py-4 rounded-2xl text-lg font-semibold whitespace-nowrap transition-all ${selectedCategory === cat._id
+                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg"
                     : "glass-button hover:text-white"
                     }`}
                 >
@@ -388,12 +388,12 @@ export default function HomePage() {
 
             {/* Sort Dropdown */}
             <div className="relative group">
-              <button className="flex items-center gap-2 px-5 py-2.5 glass-button rounded-xl text-sm font-medium">
-                <Filter size={16} />
+              <button className="flex items-center gap-3 px-8 py-4 glass-button rounded-2xl text-lg font-semibold">
+                <Filter size={22} />
                 Sort by
-                <ChevronDown size={14} />
+                <ChevronDown size={18} />
               </button>
-              <div className="absolute right-0 mt-2 w-56 glass-card-static rounded-xl py-2 hidden group-hover:block animate-fade-in z-50">
+              <div className="absolute right-0 mt-2 w-72 glass-card-static rounded-2xl py-3 hidden group-hover:block animate-fade-in z-50">
                 {[
                   { value: "price-asc", label: "Price: Low to High" },
                   { value: "price-desc", label: "Price: High to Low" },
@@ -402,7 +402,7 @@ export default function HomePage() {
                   <button
                     key={option.value}
                     onClick={() => setSortBy(option.value as any)}
-                    className={`w-full text-left px-5 py-3 text-sm hover:bg-[var(--glass-bg)] transition-colors ${sortBy === option.value ? "text-[var(--primary)] font-semibold" : "text-[var(--foreground-muted)]"
+                    className={`w-full text-left px-6 py-4 text-lg hover:bg-[var(--glass-bg)] transition-colors ${sortBy === option.value ? "text-[var(--primary)] font-bold" : "text-[var(--foreground-muted)]"
                       }`}
                   >
                     {option.label}

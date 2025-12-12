@@ -174,7 +174,7 @@ export default function DashboardPage() {
     { name: "Negative", value: globalStats.negatifs },
   ].filter((item) => item.value > 0);
 
-  // Score Moyenne par Produit data (top 8 products by score)
+  // Average Score by Product data (top 8 products by score)
   const scoreData = products
     .filter(p => p.score_moyen > 0)
     .sort((a, b) => b.score_moyen - a.score_moyen)
@@ -298,11 +298,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Score Moyenne par Produit */}
+          {/* Average Score by Product */}
           <div className="glass-card-static p-6 rounded-2xl">
             <div className="flex items-center gap-2 mb-6">
               <Star className="text-[var(--warning)]" size={20} />
-              <h2 className="text-lg font-heading font-bold text-white">Score Moyenne par Produit</h2>
+              <h2 className="text-lg font-heading font-bold text-white">Average Score by Product</h2>
             </div>
             {scoreData.length > 0 ? (
               <div className="h-[280px]">
@@ -381,8 +381,8 @@ export default function DashboardPage() {
                       </td>
                       <td>
                         <span className={`badge ${order.statut === "livree" ? "badge-success" :
-                            order.statut === "annulee" ? "badge-error" :
-                              "badge-warning"
+                          order.statut === "annulee" ? "badge-error" :
+                            "badge-warning"
                           }`}>
                           {order.statut?.replace("_", " ")}
                         </span>
