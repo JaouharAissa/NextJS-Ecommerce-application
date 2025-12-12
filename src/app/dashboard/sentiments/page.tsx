@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Search, ArrowLeft, AlertTriangle } from "lucide-react";
 import AdminNavbar from "@/app/components/AdminNavbar";
 
@@ -58,7 +58,7 @@ export default function SentimentsPage() {
       });
 
       if (!res.ok) {
-        throw new Error("Erreur lors du chargement des statistiques");
+        throw new Error("Error loading statistics");
       }
 
       const data = await res.json();
@@ -80,88 +80,88 @@ export default function SentimentsPage() {
     );
   }, [productStats, searchQuery]);
 
+  const productsToWatch = productStats.filter((p) => p.total >= 5 && p.negatifPercent >= 40);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="glass-card p-8">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-pattern">
+    <div className="min-h-screen">
       <AdminNavbar />
 
-      <main className="container-main pb-16 pt-20 lg:pt-24 space-y-12 lg:space-y-16">
+      <main className="container-main pb-16 pt-8 space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/dashboard")}
-              className="p-3 glass-button rounded-xl hover:scale-110 transition-all"
+              className="p-3 glass-button rounded-xl hover:bg-[var(--glass-bg-hover)] transition-all"
             >
-              <ArrowLeft size={24} className="text-gray-700" />
+              <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Product Sentiment Analysis
+              <h1 className="text-3xl font-heading font-bold text-white">
+                Sentiment Analysis
               </h1>
-              <p className="text-gray-600 mt-1">
-                Visualize review distribution for each product
+              <p className="text-[var(--foreground-muted)]">
+                Review distribution for each product
               </p>
             </div>
           </div>
 
           {/* Search */}
           <div className="relative w-full md:w-auto md:min-w-[300px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
             <input
               type="text"
-              placeholder="Type a product name to see stats..."
+              placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 glass-card border-0 focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 placeholder-gray-500"
+              className="glass-input w-full pl-12"
             />
           </div>
         </div>
 
-        {/* Alertes produits à surveiller */}
-        {productStats.filter((p) => p.total >= 5 && p.negatifPercent >= 40).length > 0 && (
-          <div className="glass-card p-6 rounded-2xl border-l-4 border-red-500">
+        {/* Alerts */}
+        {productsToWatch.length > 0 && (
+          <div className="glass-card-static p-6 rounded-2xl border-l-4 border-[var(--error)]">
             <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="text-red-600" size={24} />
-              <h2 className="text-xl font-bold text-gray-900">
-                Products to Watch ({productStats.filter((p) => p.total >= 5 && p.negatifPercent >= 40).length})
+              <AlertTriangle className="text-[var(--error)]" size={24} />
+              <h2 className="text-lg font-heading font-bold text-white">
+                Products to Watch ({productsToWatch.length})
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {productStats
-                .filter((p) => p.total >= 5 && p.negatifPercent >= 40)
-                .map((product) => (
-                  <div
-                    key={product.produitId}
-                    className="p-4 glass-button rounded-xl hover-lift bg-red-50 border border-red-200"
-                  >
-                    <p className="font-bold text-gray-900 mb-1">{product.nom}</p>
-                    <p className="text-sm text-gray-600">
-                      {product.total} reviews • {product.negatifPercent.toFixed(1)}% negative
-                    </p>
-                    <p className="text-xs text-red-600 font-medium mt-2">
-                      Score: {product.scoreGlobal.toFixed(2)}
-                    </p>
-                  </div>
-                ))}
+              {productsToWatch.map((product) => (
+                <div
+                  key={product.produitId}
+                  className="p-4 glass-button rounded-xl bg-[var(--error)]/10 border border-[var(--error)]/30"
+                >
+                  <p className="font-semibold text-white mb-1">{product.nom}</p>
+                  <p className="text-sm text-[var(--foreground-muted)]">
+                    {product.total} reviews • {product.negatifPercent.toFixed(1)}% negative
+                  </p>
+                  <p className="text-xs text-[var(--error)] font-medium mt-2">
+                    Score: {product.scoreGlobal.toFixed(2)}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Liste des produits avec camemberts */}
+        {/* Products Grid with Charts */}
         {filteredProducts.length === 0 ? (
-          <div className="glass-card p-12 text-center rounded-2xl">
-            <p className="text-lg text-gray-600 font-medium">
-              {searchQuery ? "No products found" : "No products with comments"}
+          <div className="glass-card-static p-16 text-center rounded-2xl">
+            <p className="text-lg text-[var(--foreground-muted)]">
+              {searchQuery ? "No products found" : "No products with reviews"}
             </p>
           </div>
         ) : (
@@ -176,7 +176,7 @@ export default function SentimentsPage() {
               return (
                 <div
                   key={product.produitId}
-                  className="glass-card p-6 rounded-2xl hover-lift space-y-4"
+                  className="glass-card p-6 rounded-2xl space-y-4"
                 >
                   {/* Product Info */}
                   <div className="text-center space-y-2">
@@ -184,18 +184,18 @@ export default function SentimentsPage() {
                       <img
                         src={product.image}
                         alt={product.nom}
-                        className="w-20 h-20 mx-auto rounded-xl object-cover"
+                        className="w-16 h-16 mx-auto rounded-xl object-cover"
                       />
                     )}
-                    <h3 className="font-bold text-lg text-gray-900">{product.nom}</h3>
-                    <p className="text-sm text-gray-600">
-                      {product.total} reviews • Avg Rating: {product.noteMoyenne?.toFixed(1) || "0.0"} ⭐
+                    <h3 className="font-heading font-bold text-white">{product.nom}</h3>
+                    <p className="text-sm text-[var(--foreground-muted)]">
+                      {product.total} reviews • Avg: {product.noteMoyenne?.toFixed(1) || "0.0"} ⭐
                     </p>
                   </div>
 
                   {/* Pie Chart */}
                   {pieData.length > 0 ? (
-                    <div className="h-64">
+                    <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -204,9 +204,9 @@ export default function SentimentsPage() {
                             cy="50%"
                             labelLine={false}
                             label={({ name, percent }: any) =>
-                              `${name}: ${(percent * 100).toFixed(0)}%`
+                              `${(percent * 100).toFixed(0)}%`
                             }
-                            outerRadius={80}
+                            outerRadius={70}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -221,49 +221,55 @@ export default function SentimentsPage() {
                                 <Cell
                                   key={`cell-${index}`}
                                   fill={COLORS[colorKey as keyof typeof COLORS]}
+                                  stroke="transparent"
                                 />
                               );
                             })}
                           </Pie>
-                          <Tooltip />
-                          <Legend />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'var(--background-secondary)',
+                              border: '1px solid var(--glass-border)',
+                              borderRadius: '8px',
+                            }}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
                   ) : (
-                    <div className="h-64 flex items-center justify-center text-gray-400">
+                    <div className="h-48 flex items-center justify-center text-[var(--foreground-muted)]">
                       <p>No data</p>
                     </div>
                   )}
 
                   {/* Stats */}
-                  <div className="space-y-2 pt-4 border-t border-gray-200">
+                  <div className="space-y-2 pt-4 border-t border-[var(--glass-border)]">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Positive:</span>
-                      <span className="font-semibold text-green-600">
+                      <span className="text-[var(--foreground-muted)]">Positive:</span>
+                      <span className="font-semibold text-[var(--success)]">
                         {product.positifPercent.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Neutral:</span>
-                      <span className="font-semibold text-yellow-600">
+                      <span className="text-[var(--foreground-muted)]">Neutral:</span>
+                      <span className="font-semibold text-[var(--warning)]">
                         {product.neutrePercent.toFixed(1)}%
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Negative:</span>
-                      <span className="font-semibold text-red-600">
+                      <span className="text-[var(--foreground-muted)]">Negative:</span>
+                      <span className="font-semibold text-[var(--error)]">
                         {product.negatifPercent.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="flex justify-between pt-2 border-t border-gray-200">
-                      <span className="font-bold text-gray-900">Global Score:</span>
+                    <div className="flex justify-between pt-2 border-t border-[var(--glass-border)]">
+                      <span className="font-semibold text-white">Global Score:</span>
                       <span
                         className={`font-bold ${product.scoreGlobal >= 0.5
-                          ? "text-green-600"
+                          ? "text-[var(--success)]"
                           : product.scoreGlobal >= 0
-                            ? "text-yellow-600"
-                            : "text-red-600"
+                            ? "text-[var(--warning)]"
+                            : "text-[var(--error)]"
                           }`}
                       >
                         {product.scoreGlobal.toFixed(2)}
@@ -279,5 +285,3 @@ export default function SentimentsPage() {
     </div>
   );
 }
-
-

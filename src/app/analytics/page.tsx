@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import AdminNavbar from "@/app/components/AdminNavbar";
 
 interface ProductSentiment {
     produitId: string;
@@ -13,6 +14,12 @@ interface ProductSentiment {
     neutre: number;
     total: number;
 }
+
+const COLORS = {
+    positif: "#10b981",
+    negatif: "#ef4444",
+    neutre: "#f59e0b",
+};
 
 export default function AnalyticsPage() {
     const [sentiments, setSentiments] = useState<ProductSentiment[]>([]);
@@ -51,61 +58,45 @@ export default function AnalyticsPage() {
         }
     };
 
-    const COLORS = {
-        positif: "#10b981",
-        negatif: "#ef4444",
-        neutre: "#f59e0b",
-    };
-
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-pattern">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="glass-card p-8">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+                    <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-pattern">
-            {/* Glass Navbar */}
-            <header className="glass-nav sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-20">
-                        <button
-                            onClick={() => router.push("/dashboard")}
-                            className="flex items-center gap-3 glass-button px-5 py-3 rounded-xl hover:scale-105 transition-all"
-                        >
-                            <ArrowLeft size={20} />
-                            <span className="font-semibold text-gray-700">Retour au tableau de bord</span>
-                        </button>
+        <div className="min-h-screen">
+            <AdminNavbar />
 
-                        <h1 className="text-3xl font-bold text-gradient-blue">Analytics</h1>
-
-                        <div className="w-48"></div>
+            <main className="container-main pt-8 pb-16">
+                <div className="flex items-center gap-4 mb-8">
+                    <button
+                        onClick={() => router.push("/dashboard")}
+                        className="p-3 glass-button rounded-xl hover:bg-[var(--glass-bg-hover)] transition-all"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-heading font-bold text-white">Analytics</h1>
+                        <p className="text-[var(--foreground-muted)]">Sentiment distribution by product</p>
                     </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-                <div className="mb-10 animate-fade-in">
-                    <h2 className="text-4xl font-bold text-white mb-2">Répartition des sentiments par produit</h2>
-                    <p className="text-white/80 text-lg">Analyse détaillée des avis clients pour chaque produit</p>
                 </div>
 
                 {sentiments.length === 0 ? (
-                    <div className="glass-card p-12 text-center">
-                        <p className="text-gray-600 text-lg">Aucune donnée de sentiment disponible</p>
+                    <div className="glass-card-static p-16 text-center rounded-2xl">
+                        <p className="text-[var(--foreground-muted)]">No sentiment data available</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {sentiments.map((sentiment, index) => {
                             const chartData = [
-                                { name: "Positif", value: sentiment.positif, color: COLORS.positif },
-                                { name: "Négatif", value: sentiment.negatif, color: COLORS.negatif },
-                                { name: "Neutre", value: sentiment.neutre, color: COLORS.neutre },
+                                { name: "Positive", value: sentiment.positif, color: COLORS.positif },
+                                { name: "Negative", value: sentiment.negatif, color: COLORS.negatif },
+                                { name: "Neutral", value: sentiment.neutre, color: COLORS.neutre },
                             ].filter((item) => item.value > 0);
 
                             const positifPercent = sentiment.total > 0 ? (sentiment.positif / sentiment.total) * 100 : 0;
@@ -115,14 +106,14 @@ export default function AnalyticsPage() {
                             return (
                                 <div
                                     key={sentiment.produitId}
-                                    className="glass-card p-6 hover-lift animate-scale-in"
+                                    className="glass-card p-6 rounded-2xl"
                                     style={{ animationDelay: `${index * 0.1}s` }}
                                 >
-                                    <h3 className="text-xl font-bold text-gray-900 mb-4">{sentiment.nom}</h3>
+                                    <h3 className="text-xl font-heading font-bold text-white mb-4">{sentiment.nom}</h3>
 
                                     {chartData.length > 0 ? (
                                         <>
-                                            <div className="h-64 mb-6">
+                                            <div className="h-48 mb-6">
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <PieChart>
                                                         <Pie
@@ -130,17 +121,22 @@ export default function AnalyticsPage() {
                                                             cx="50%"
                                                             cy="50%"
                                                             labelLine={false}
-                                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                                            outerRadius={80}
+                                                            label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                                            outerRadius={70}
                                                             fill="#8884d8"
                                                             dataKey="value"
                                                         >
                                                             {chartData.map((entry, index) => (
-                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                                <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
                                                             ))}
                                                         </Pie>
-                                                        <Tooltip />
-                                                        <Legend />
+                                                        <Tooltip
+                                                            contentStyle={{
+                                                                backgroundColor: 'var(--background-secondary)',
+                                                                border: '1px solid var(--glass-border)',
+                                                                borderRadius: '8px',
+                                                            }}
+                                                        />
                                                     </PieChart>
                                                 </ResponsiveContainer>
                                             </div>
@@ -148,41 +144,41 @@ export default function AnalyticsPage() {
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between p-3 glass-button rounded-xl">
                                                     <div className="flex items-center gap-3">
-                                                        <TrendingUp className="text-green-500" size={20} />
-                                                        <span className="font-semibold text-gray-700">Positif</span>
+                                                        <TrendingUp className="text-[var(--success)]" size={20} />
+                                                        <span className="font-medium text-white">Positive</span>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-bold text-green-600">{sentiment.positif}</p>
-                                                        <p className="text-xs text-gray-500">{positifPercent.toFixed(1)}%</p>
+                                                        <p className="font-bold text-[var(--success)]">{sentiment.positif}</p>
+                                                        <p className="text-xs text-[var(--foreground-muted)]">{positifPercent.toFixed(1)}%</p>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center justify-between p-3 glass-button rounded-xl">
                                                     <div className="flex items-center gap-3">
-                                                        <TrendingDown className="text-red-500" size={20} />
-                                                        <span className="font-semibold text-gray-700">Négatif</span>
+                                                        <TrendingDown className="text-[var(--error)]" size={20} />
+                                                        <span className="font-medium text-white">Negative</span>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-bold text-red-600">{sentiment.negatif}</p>
-                                                        <p className="text-xs text-gray-500">{negatifPercent.toFixed(1)}%</p>
+                                                        <p className="font-bold text-[var(--error)]">{sentiment.negatif}</p>
+                                                        <p className="text-xs text-[var(--foreground-muted)]">{negatifPercent.toFixed(1)}%</p>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center justify-between p-3 glass-button rounded-xl">
                                                     <div className="flex items-center gap-3">
-                                                        <Minus className="text-yellow-500" size={20} />
-                                                        <span className="font-semibold text-gray-700">Neutre</span>
+                                                        <Minus className="text-[var(--warning)]" size={20} />
+                                                        <span className="font-medium text-white">Neutral</span>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-bold text-yellow-600">{sentiment.neutre}</p>
-                                                        <p className="text-xs text-gray-500">{neutrePercent.toFixed(1)}%</p>
+                                                        <p className="font-bold text-[var(--warning)]">{sentiment.neutre}</p>
+                                                        <p className="text-xs text-[var(--foreground-muted)]">{neutrePercent.toFixed(1)}%</p>
                                                     </div>
                                                 </div>
 
-                                                <div className="pt-3 border-t border-gray-200/50">
+                                                <div className="pt-3 border-t border-[var(--glass-border)]">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="font-semibold text-gray-700">Total des avis</span>
-                                                        <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                                        <span className="font-medium text-white">Total Reviews</span>
+                                                        <span className="text-xl font-bold text-gradient">
                                                             {sentiment.total}
                                                         </span>
                                                     </div>
@@ -191,7 +187,7 @@ export default function AnalyticsPage() {
                                         </>
                                     ) : (
                                         <div className="text-center py-8">
-                                            <p className="text-gray-500">Aucun avis pour ce produit</p>
+                                            <p className="text-[var(--foreground-muted)]">No reviews for this product</p>
                                         </div>
                                     )}
                                 </div>

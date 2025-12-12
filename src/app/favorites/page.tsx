@@ -1,120 +1,191 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Navbar from "@/app/components/Navbar";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { Trash2, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingBag, Heart, Sparkles } from "lucide-react";
+import Navbar from "@/app/components/Navbar";
 
 interface Product {
     _id: string;
     nom: string;
     prix: number;
     images: string[];
+    image?: string;
     categorie: { _id: string; nom: string };
 }
 
 export default function FavoritesPage() {
     const [favorites, setFavorites] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
-        // Load favorites from localStorage
-        const storedFavorites = localStorage.getItem("favorites");
-        if (storedFavorites) {
-            try {
-                setFavorites(JSON.parse(storedFavorites));
-            } catch (e) {
-                console.error("Error parsing favorites", e);
-            }
+        const token = localStorage.getItem("token");
+        if (!token) {
+            router.push("/login");
+            return;
         }
-        setLoading(false);
-    }, []);
 
-    const removeFavorite = (id: string) => {
-        const updatedFavorites = favorites.filter((p) => p._id !== id);
-        setFavorites(updatedFavorites);
-        localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+        // Charger les favoris depuis l'API
+        const loadFavorites = async () => {
+            try {
+                const res = await fetch("/api/favorites", {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setFavorites(data.favorites || []);
+                }
+            } catch (error) {
+                console.error("Error loading favorites:", error);
+            }
+            setLoading(false);
+        };
+
+        loadFavorites();
+    }, [router]);
+
+    const removeFavorite = async (id: string) => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                router.push("/login");
+                return;
+            }
+
+            // Mise à jour optimiste
+            setFavorites(favorites.filter((p) => p._id !== id));
+
+            // Appeler l'API pour retirer le favori
+            const res = await fetch("/api/favorites", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ productId: id })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setFavorites(data.favorites || []);
+            }
+        } catch (error) {
+            console.error("Error removing favorite:", error);
+        }
     };
 
     const navLinks = [
         { name: "Home", href: "/home" },
-        { name: "Products", href: "/products" },
-        { name: "Categories", href: "/categories" },
-        { name: "Contact", href: "/contact" },
     ];
 
-    return (
-        <div className="min-h-screen bg-gray-50">
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="glass-card p-8">
+                    <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+        );
+    }
 
+    return (
+        <div className="min-h-screen">
+            <Navbar links={navLinks} />
 
             <main className="container-main py-12">
-                <h1 className="text-3xl font-serif font-bold mb-8 text-black">My Favorites</h1>
-
-                {loading ? (
-                    <div className="flex justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+                {/* Header */}
+                <div className="mb-10">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Heart className="text-[var(--pink)]" size={28} />
+                        <h1 className="text-3xl font-heading font-bold text-white">My Favorites</h1>
                     </div>
-                ) : favorites.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-medium text-gray-900 mb-4">Your favorites list is empty</h2>
-                        <p className="text-gray-500 mb-8">Explore our collections to find what you love.</p>
-                        <Link
-                            href="/products"
-                            className="inline-block bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors"
-                        >
+                    <p className="text-[var(--foreground-muted)]">
+                        {favorites.length} {favorites.length === 1 ? 'item' : 'items'} saved
+                    </p>
+                </div>
+
+                {favorites.length === 0 ? (
+                    <div className="glass-card-static p-16 text-center rounded-2xl">
+                        <Heart className="mx-auto text-[var(--foreground-muted)] mb-4" size={64} />
+                        <h2 className="text-xl font-heading font-bold text-white mb-2">
+                            Your favorites list is empty
+                        </h2>
+                        <p className="text-[var(--foreground-muted)] mb-8">
+                            Explore our collections to find what you love.
+                        </p>
+                        <Link href="/home" className="btn-gradient">
+                            <Sparkles size={18} />
                             Discover Products
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {favorites.map((product) => (
-                            <div key={product._id} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-gray-100">
-                                <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
-                                    {product.images && product.images[0] ? (
-                                        <Image
-                                            src={product.images[0]}
-                                            alt={product.nom}
-                                            fill
-                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                                            No Image
-                                        </div>
-                                    )}
-                                    <button
-                                        onClick={() => removeFavorite(product._id)}
-                                        className="absolute top-3 right-3 p-2 bg-white/90 rounded-full text-red-500 hover:bg-red-50 transition-colors shadow-sm"
-                                        title="Remove from favorites"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {favorites.map((product, index) => {
+                            const productImage = product.images?.[0] || product.image || null;
 
-                                <div className="p-4">
-                                    <div className="mb-2">
-                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            return (
+                                <div
+                                    key={product._id}
+                                    className="product-card-modern group"
+                                    style={{ animationDelay: `${index * 0.05}s` }}
+                                >
+                                    {/* Image Container */}
+                                    <div className="product-image-container-modern">
+                                        {productImage ? (
+                                            <img
+                                                src={productImage}
+                                                alt={product.nom}
+                                                className="product-image-modern"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[var(--foreground-muted)]">
+                                                No Image
+                                            </div>
+                                        )}
+
+                                        {/* Overlay */}
+                                        <div className="product-overlay">
+                                            <Link
+                                                href={`/product/${product._id}`}
+                                                className="btn-gradient w-full py-3 text-sm text-center"
+                                            >
+                                                <ShoppingBag size={16} />
+                                                View Product
+                                            </Link>
+                                        </div>
+
+                                        {/* Remove Button */}
+                                        <button
+                                            onClick={() => removeFavorite(product._id)}
+                                            className="absolute top-4 right-4 p-2 glass-button rounded-xl text-[var(--error)] hover:bg-[var(--error)]/20 transition-all"
+                                            title="Remove from favorites"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+
+                                        {/* Category Badge */}
+                                        <div className="absolute top-4 left-4 px-3 py-1 glass-button rounded-lg text-xs uppercase tracking-wider">
                                             {product.categorie?.nom || "Collection"}
+                                        </div>
+                                    </div>
+
+                                    {/* Product Info */}
+                                    <div className="p-5">
+                                        <Link href={`/product/${product._id}`}>
+                                            <h3 className="font-heading font-semibold text-white group-hover:text-[var(--primary)] transition-colors line-clamp-1 mb-2">
+                                                {product.nom}
+                                            </h3>
+                                        </Link>
+                                        <span className="text-lg font-bold text-gradient">
+                                            {product.prix.toFixed(2)} DT
                                         </span>
                                     </div>
-                                    <Link href={`/product/${product._id}`}>
-                                        <h3 className="font-medium text-gray-900 mb-1 truncate hover:underline">
-                                            {product.nom}
-                                        </h3>
-                                    </Link>
-                                    <div className="flex items-center justify-between mt-3">
-                                        <span className="font-semibold text-black">{product.prix} TND</span>
-                                        <Link
-                                            href={`/product/${product._id}`}
-                                            className="p-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
-                                        >
-                                            <ShoppingBag size={16} />
-                                        </Link>
-                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </main>

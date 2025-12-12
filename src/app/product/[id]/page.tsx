@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ShoppingBag, Star, ArrowLeft, MessageSquare, Send, User, X, Check } from "lucide-react";
+import { ShoppingBag, Star, ArrowLeft, Send, X, Check, Heart } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
 
 interface Comment {
@@ -44,35 +44,23 @@ export default function ProductPage() {
   const { id } = useParams();
   const router = useRouter();
 
-  // Data state
   const [product, setProduct] = useState<Product | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // User state
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // UI state
   const [selectedImage, setSelectedImage] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Comment form state
   const [newComment, setNewComment] = useState("");
   const [rating, setRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
 
-  // Edit comment state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [editingRating, setEditingRating] = useState(5);
-
-  // Links for Navbar
-  const links = [
-    { name: "Accueil", href: "/" },
-    { name: "Boutique", href: "/home" },
-    { name: "Contact", href: "/contact" },
-  ];
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -98,10 +86,9 @@ export default function ProductPage() {
   const fetchProduct = async () => {
     try {
       const res = await fetch(`/api/products/${id}`);
-      if (!res.ok) throw new Error("Produit non trouvé");
+      if (!res.ok) throw new Error("Product not found");
       const data = await res.json();
 
-      // Ensure images is an array
       const normalizedProduct = {
         ...data,
         images: data.images && data.images.length > 0 ? data.images : (data.image ? [data.image] : []),
@@ -139,7 +126,8 @@ export default function ProductPage() {
 
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("storage"));
-    alert("Produit ajouté au panier");
+    setFeedback("Added to cart!");
+    setTimeout(() => setFeedback(null), 3000);
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -172,7 +160,7 @@ export default function ProductPage() {
         setNewComment("");
         setRating(5);
         await Promise.all([fetchComments(), fetchProduct()]);
-        setFeedback("Commentaire ajouté !");
+        setFeedback("Comment added!");
         setTimeout(() => setFeedback(null), 3000);
       }
     } catch (error) {
@@ -214,7 +202,7 @@ export default function ProductPage() {
       if (res.ok) {
         cancelEdit();
         await Promise.all([fetchComments(), fetchProduct()]);
-        setFeedback("Commentaire mis à jour !");
+        setFeedback("Comment updated!");
         setTimeout(() => setFeedback(null), 3000);
       }
     } catch (error) {
@@ -223,7 +211,7 @@ export default function ProductPage() {
   };
 
   const handleDelete = async (commentId: string) => {
-    if (!confirm("Supprimer ce commentaire ?")) return;
+    if (!confirm("Delete this comment?")) return;
 
     const token = localStorage.getItem("token");
     try {
@@ -234,7 +222,7 @@ export default function ProductPage() {
 
       if (res.ok) {
         await Promise.all([fetchComments(), fetchProduct()]);
-        setFeedback("Commentaire supprimé.");
+        setFeedback("Comment deleted.");
         setTimeout(() => setFeedback(null), 3000);
       }
     } catch (error) {
@@ -244,8 +232,10 @@ export default function ProductPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -253,22 +243,20 @@ export default function ProductPage() {
   if (!product) return null;
 
   return (
-    <div className="min-h-screen bg-white text-black font-sans">
-
-
-      <main className="container-main pt-24 pb-16">
+    <div className="min-h-screen">
+      <main className="container-main pt-8 pb-16">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm uppercase tracking-wider text-gray-500 hover:text-black transition-colors mb-8"
+          className="flex items-center gap-2 text-sm uppercase tracking-wider text-[var(--foreground-muted)] hover:text-white transition-colors mb-8 glass-button px-4 py-2 rounded-xl"
         >
           <ArrowLeft size={16} />
-          Retour
+          Back
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="aspect-[3/4] w-full bg-gray-100 overflow-hidden">
+            <div className="aspect-[3/4] w-full glass-card-static overflow-hidden rounded-2xl">
               <img
                 src={product.images[selectedImage]}
                 alt={product.nom}
@@ -276,12 +264,14 @@ export default function ProductPage() {
               />
             </div>
             {product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-3">
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`aspect-[3/4] w-full bg-gray-100 overflow-hidden transition-all ${selectedImage === idx ? "ring-1 ring-black" : "opacity-70 hover:opacity-100"
+                    className={`aspect-[3/4] w-full rounded-xl overflow-hidden transition-all ${selectedImage === idx
+                        ? "ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-[var(--background)]"
+                        : "opacity-60 hover:opacity-100"
                       }`}
                   >
                     <img src={img} alt="" className="w-full h-full object-cover" />
@@ -292,69 +282,69 @@ export default function ProductPage() {
           </div>
 
           {/* Product Info */}
-          <div className="flex flex-col h-full">
-            <div className="border-b border-gray-200 pb-8 mb-8">
+          <div className="flex flex-col">
+            <div className="glass-card-static p-8 rounded-2xl mb-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                <span className="badge badge-primary">
                   {product.categorie?.nom}
                 </span>
-                <div className="flex items-center gap-1">
-                  <Star size={14} className="fill-black text-black" />
-                  <span className="text-sm font-medium">{product.score_moyen?.toFixed(1) || "0.0"}</span>
-                  <span className="text-xs text-gray-400">({comments.length} avis)</span>
+                <div className="flex items-center gap-2">
+                  <Star size={18} className="fill-[var(--warning)] text-[var(--warning)]" />
+                  <span className="font-semibold">{product.score_moyen?.toFixed(1) || "0.0"}</span>
+                  <span className="text-sm text-[var(--foreground-muted)]">({comments.length} reviews)</span>
                 </div>
               </div>
 
-              <h1 className="text-4xl font-serif font-medium mb-4">{product.nom}</h1>
-              <p className="text-2xl font-light mb-6">{product.prix.toFixed(2)} DT</p>
+              <h1 className="text-3xl font-heading font-bold text-white mb-4">{product.nom}</h1>
+              <p className="text-3xl font-bold text-gradient mb-6">{product.prix.toFixed(2)} DT</p>
 
-              <p className="text-gray-600 leading-relaxed text-sm">
+              <p className="text-[var(--foreground-muted)] leading-relaxed mb-8">
                 {product.description}
               </p>
-            </div>
 
-            <div className="space-y-6">
               <button
                 onClick={handleAddToCart}
-                className="w-full bg-black text-white py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
+                className="btn-gradient w-full py-4 text-base"
               >
-                <ShoppingBag size={18} />
-                Ajouter au panier
+                <ShoppingBag size={20} />
+                Add to Cart
               </button>
 
-              <div className="grid grid-cols-3 gap-4 text-center text-xs uppercase tracking-wider text-gray-500 pt-8">
-                <div>Livraison Gratuite</div>
-                <div>Retour sous 30 jours</div>
-                <div>Paiement Sécurisé</div>
+              {feedback && (
+                <div className="mt-4 p-4 bg-[var(--success)]/20 border border-[var(--success)]/30 rounded-xl flex items-center gap-2 text-[var(--success)] animate-fade-in">
+                  <Check size={18} />
+                  <span>{feedback}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-4 text-center text-xs uppercase tracking-wider text-[var(--foreground-muted)] pt-8 mt-8 border-t border-[var(--glass-border)]">
+                <div className="glass-button p-3 rounded-xl">Free Shipping</div>
+                <div className="glass-button p-3 rounded-xl">30 Day Returns</div>
+                <div className="glass-button p-3 rounded-xl">Secure Payment</div>
               </div>
             </div>
 
             {/* Comments Section */}
-            <div className="mt-16 pt-16 border-t border-gray-200">
-              <h3 className="text-xl font-serif font-medium mb-8">Avis Clients</h3>
-
-              {feedback && (
-                <div className="mb-6 p-4 bg-gray-50 text-sm text-gray-600 flex items-center gap-2">
-                  <Check size={16} />
-                  {feedback}
-                </div>
-              )}
+            <div className="glass-card-static p-8 rounded-2xl">
+              <h3 className="text-xl font-heading font-bold text-white mb-6">Customer Reviews</h3>
 
               {/* Add Comment Form */}
-              <form onSubmit={handleSubmitComment} className="mb-12">
+              <form onSubmit={handleSubmitComment} className="mb-8">
                 <div className="mb-4">
-                  <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">Votre note</label>
+                  <label className="block text-xs uppercase tracking-wider text-[var(--foreground-muted)] mb-2">Your Rating</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
                         onClick={() => setRating(star)}
-                        className="focus:outline-none"
+                        className="focus:outline-none transition-transform hover:scale-110"
                       >
                         <Star
-                          size={20}
-                          className={`${star <= rating ? "fill-black text-black" : "text-gray-300"
+                          size={24}
+                          className={`${star <= rating
+                              ? "fill-[var(--warning)] text-[var(--warning)]"
+                              : "text-[var(--foreground-muted)]"
                             } transition-colors`}
                         />
                       </button>
@@ -366,27 +356,27 @@ export default function ProductPage() {
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Partagez votre expérience..."
-                    className="w-full border-b border-gray-300 py-3 pr-12 text-sm focus:border-black focus:outline-none transition-colors resize-none bg-transparent placeholder:text-gray-400"
-                    rows={1}
+                    placeholder="Share your experience..."
+                    className="glass-input w-full pr-12 resize-none"
+                    rows={3}
                   />
                   <button
                     type="submit"
                     disabled={submitting || !newComment.trim()}
-                    className="absolute right-0 bottom-3 text-black disabled:text-gray-300 transition-colors"
+                    className="absolute right-4 bottom-4 text-[var(--primary)] disabled:text-[var(--foreground-muted)] hover:text-[var(--accent)] transition-colors"
                   >
-                    <Send size={18} />
+                    <Send size={20} />
                   </button>
                 </div>
               </form>
 
               {/* Comments List */}
-              <div className="space-y-8">
+              <div className="space-y-4">
                 {comments.length > 0 ? (
                   comments.map((comment) => (
-                    <div key={comment._id} className="group">
+                    <div key={comment._id} className="glass-button p-4 rounded-xl group">
                       {editingId === comment._id ? (
-                        <div className="bg-gray-50 p-6 space-y-4">
+                        <div className="space-y-4">
                           <div className="flex gap-2">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <button
@@ -395,8 +385,10 @@ export default function ProductPage() {
                                 className="focus:outline-none"
                               >
                                 <Star
-                                  size={16}
-                                  className={`${star <= editingRating ? "fill-black text-black" : "text-gray-300"
+                                  size={18}
+                                  className={`${star <= editingRating
+                                      ? "fill-[var(--warning)] text-[var(--warning)]"
+                                      : "text-[var(--foreground-muted)]"
                                     }`}
                                 />
                               </button>
@@ -405,39 +397,45 @@ export default function ProductPage() {
                           <textarea
                             value={editingContent}
                             onChange={(e) => setEditingContent(e.target.value)}
-                            className="w-full bg-white border border-gray-200 p-3 text-sm focus:outline-none focus:border-black"
+                            className="glass-input w-full resize-none"
                             rows={3}
                           />
-                          <div className="flex justify-end gap-2">
-                            <button onClick={cancelEdit} className="text-xs uppercase tracking-wider text-gray-500 hover:text-black">Annuler</button>
-                            <button onClick={submitEdit} className="text-xs uppercase tracking-wider text-black font-medium">Enregistrer</button>
+                          <div className="flex justify-end gap-3">
+                            <button onClick={cancelEdit} className="btn-ghost px-4 py-2 text-sm">Cancel</button>
+                            <button onClick={submitEdit} className="btn-gradient px-4 py-2 text-sm">Save</button>
                           </div>
                         </div>
                       ) : (
                         <>
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{comment.utilisateur?.username || "Anonyme"}</span>
-                              <span className="text-xs text-gray-400">• {new Date(comment.createdAt).toLocaleDateString()}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium text-white">{comment.utilisateur?.username || "Anonymous"}</span>
+                              <span className="text-xs text-[var(--foreground-muted)]">
+                                {new Date(comment.createdAt).toLocaleDateString()}
+                              </span>
                             </div>
-                            <div className="flex gap-0.5">
+                            <div className="flex gap-1">
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  size={12}
-                                  className={i < comment.note ? "fill-black text-black" : "text-gray-200"}
+                                  size={14}
+                                  className={i < comment.note ? "fill-[var(--warning)] text-[var(--warning)]" : "text-[var(--foreground-muted)]"}
                                 />
                               ))}
                             </div>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">{comment.contenu}</p>
+                          <p className="text-[var(--foreground-muted)] text-sm">{comment.contenu}</p>
 
                           {(userId === comment.utilisateur?._id || userRole === "admin") && (
-                            <div className="flex gap-3 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-3 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                               {userId === comment.utilisateur?._id && (
-                                <button onClick={() => startEdit(comment)} className="text-xs text-gray-400 hover:text-black">Modifier</button>
+                                <button onClick={() => startEdit(comment)} className="text-xs text-[var(--primary)] hover:text-[var(--accent)]">
+                                  Edit
+                                </button>
                               )}
-                              <button onClick={() => handleDelete(comment._id)} className="text-xs text-gray-400 hover:text-red-600">Supprimer</button>
+                              <button onClick={() => handleDelete(comment._id)} className="text-xs text-[var(--error)] hover:text-red-400">
+                                Delete
+                              </button>
                             </div>
                           )}
                         </>
@@ -445,7 +443,7 @@ export default function ProductPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-400 text-sm italic">Aucun avis pour le moment.</p>
+                  <p className="text-[var(--foreground-muted)] text-center py-8">No reviews yet.</p>
                 )}
               </div>
             </div>

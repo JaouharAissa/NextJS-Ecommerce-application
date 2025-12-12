@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageSquare, RefreshCcw, Search, Trash2, Star, ArrowRight } from "lucide-react";
+import { MessageSquare, RefreshCcw, Search, Star } from "lucide-react";
 import AdminNavbar from "@/app/components/AdminNavbar";
 
 interface AdminComment {
@@ -49,7 +49,7 @@ export default function CommentairesAdminPage() {
       setError(null);
       const authToken = token ?? localStorage.getItem("token");
       if (!authToken) {
-        throw new Error("Session expirée. Veuillez vous reconnecter.");
+        throw new Error("Session expired. Please log in again.");
       }
       const res = await fetch("/api/commentaires", {
         headers: {
@@ -64,25 +64,25 @@ export default function CommentairesAdminPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Impossible de récupérer les commentaires.");
+        throw new Error(data.error || "Unable to fetch comments.");
       }
 
       const data: AdminComment[] = await res.json();
       setComments(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue.");
+      setError(err instanceof Error ? err.message : "Unknown error.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (commentId: string) => {
-    if (!confirm("Supprimer ce commentaire ?")) return;
+    if (!confirm("Delete this comment?")) return;
     try {
       setDeletingId(commentId);
       const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error("Session expirée. Veuillez vous reconnecter.");
+        throw new Error("Session expired. Please log in again.");
       }
       const res = await fetch(`/api/commentaires/${commentId}`, {
         method: "DELETE",
@@ -98,14 +98,27 @@ export default function CommentairesAdminPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Suppression impossible.");
+        throw new Error(data.error || "Unable to delete.");
       }
 
       setComments((prev) => prev.filter((comment) => comment._id !== commentId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue.");
+      setError(err instanceof Error ? err.message : "Unknown error.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const getSentimentBadge = (sentiment?: string) => {
+    switch (sentiment?.toLowerCase()) {
+      case "positif":
+      case "positive":
+        return "badge-success";
+      case "negatif":
+      case "negative":
+        return "badge-error";
+      default:
+        return "badge-warning";
     }
   };
 
@@ -121,99 +134,102 @@ export default function CommentairesAdminPage() {
   }, [comments, search]);
 
   return (
-    <div className="min-h-screen bg-white text-black font-sans">
+    <div className="min-h-screen">
       <AdminNavbar />
 
-      <div className="container-main pt-24 pb-16">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-gray-100 pb-8">
+      <div className="container-main pt-8 pb-16">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-serif font-medium mb-2">Commentaires</h1>
-            <p className="text-gray-500 text-sm">Modération des avis clients</p>
+            <h1 className="text-3xl font-heading font-bold text-white mb-2">Reviews</h1>
+            <p className="text-[var(--foreground-muted)]">Moderate customer reviews</p>
           </div>
           <button
             onClick={() => void fetchComments()}
-            className="flex items-center gap-2 text-sm uppercase tracking-wider text-gray-500 hover:text-black transition-colors"
+            className="btn-ghost"
             disabled={loading}
           >
             <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-            Actualiser
+            Refresh
           </button>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="relative max-w-md">
-            <Search className="absolute left-0 top-3 text-gray-400" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-4 py-2.5 border-b border-gray-200 text-sm focus:outline-none focus:border-black transition-colors bg-transparent placeholder:text-gray-400"
+              className="glass-input w-full pl-12"
             />
           </div>
-          {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+          {error && <p className="text-sm text-[var(--error)] mt-2">{error}</p>}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {loading ? (
-            <div className="py-20 flex justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black" />
+            <div className="py-16 flex justify-center">
+              <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : filteredComments.length === 0 ? (
-            <div className="py-16 text-center text-gray-400 border border-dashed border-gray-200">
-              Aucun commentaire trouvé.
+            <div className="glass-card-static py-16 text-center rounded-2xl">
+              <MessageSquare className="mx-auto text-[var(--foreground-muted)] mb-4" size={48} />
+              <p className="text-[var(--foreground-muted)]">No comments found.</p>
             </div>
           ) : (
             filteredComments.map((comment) => (
               <div
                 key={comment._id}
-                className="group border border-gray-100 p-6 hover:border-black transition-colors"
+                className="glass-card p-6 rounded-2xl group"
               >
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">{comment.utilisateur?.username || "Utilisateur"}</span>
-                      <span className="text-xs text-gray-400">• {new Date(comment.createdAt).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="font-medium text-white">{comment.utilisateur?.username || "User"}</span>
+                      <span className="text-xs text-[var(--foreground-muted)]">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
-                    <div className="flex gap-0.5 mb-2">
+                    <div className="flex gap-1">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          size={12}
-                          className={i < comment.note ? "fill-black text-black" : "text-gray-200"}
+                          size={14}
+                          className={i < comment.note ? "fill-[var(--warning)] text-[var(--warning)]" : "text-[var(--foreground-muted)]"}
                         />
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-3">
+                    {comment.sentiment && (
+                      <span className={`badge ${getSentimentBadge(comment.sentiment)}`}>
+                        {comment.sentiment}
+                      </span>
+                    )}
                     <button
                       onClick={() => handleDelete(comment._id)}
                       disabled={deletingId === comment._id}
-                      className="text-xs uppercase tracking-wider text-red-500 hover:text-red-700"
+                      className="text-xs uppercase tracking-wider text-[var(--error)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      {deletingId === comment._id ? "Suppression..." : "Supprimer"}
+                      {deletingId === comment._id ? "Deleting..." : "Delete"}
                     </button>
                   </div>
                 </div>
 
-                <p className="text-gray-600 text-sm leading-relaxed mb-4">{comment.contenu}</p>
+                <p className="text-[var(--foreground-muted)] mb-4">{comment.contenu}</p>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                <div className="flex items-center justify-between pt-4 border-t border-[var(--glass-border)]">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 uppercase tracking-wider">Produit:</span>
+                    <span className="text-xs text-[var(--foreground-muted)] uppercase tracking-wider">Product:</span>
                     <button
                       onClick={() => comment.produit && router.push(`/product/${comment.produit._id}`)}
-                      className="text-xs font-medium hover:underline"
+                      className="text-sm font-medium text-[var(--primary)] hover:text-[var(--accent)] transition-colors"
                       disabled={!comment.produit}
                     >
-                      {comment.produit?.nom || "Produit supprimé"}
+                      {comment.produit?.nom || "Deleted product"}
                     </button>
                   </div>
-                  {comment.sentiment && (
-                    <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 uppercase tracking-wider">
-                      {comment.sentiment}
-                    </span>
-                  )}
                 </div>
               </div>
             ))
@@ -223,5 +239,3 @@ export default function CommentairesAdminPage() {
     </div>
   );
 }
-
-

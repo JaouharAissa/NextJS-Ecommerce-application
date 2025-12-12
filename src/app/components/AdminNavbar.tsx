@@ -1,183 +1,174 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Package,
   Tag,
-  ClipboardList,
+  ShoppingCart,
   MessageSquare,
+  BarChart3,
   LogOut,
   Menu,
   X,
-  Plus,
-  BarChart2,
-  Search
+  ChevronRight,
 } from "lucide-react";
-import LogoMark from "./LogoMark";
 
-const adminLinks = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/products", label: "Produits", icon: Package },
-  { href: "/categories", label: "Catégories", icon: Tag },
-  { href: "/commandes", label: "Commandes", icon: ClipboardList },
-  { href: "/commentaires", label: "Commentaires", icon: MessageSquare },
-  { href: "/dashboard/sentiments", label: "Sentiment Analysis", icon: BarChart2 },
-] as const;
-
-const quickActions = [
-  { label: "Ajouter un produit", href: "/products?action=new", icon: Plus },
-  { label: "Suivre les commandes", href: "/commandes", icon: ClipboardList },
-  { label: "Modérer les avis", href: "/commentaires", icon: MessageSquare },
-  { label: "Analyser les sentiments", href: "/analytics", icon: BarChart2 },
+const navItems = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Products", href: "/products", icon: Package },
+  { name: "Categories", href: "/categories", icon: Tag },
+  { name: "Orders", href: "/commandes", icon: ShoppingCart },
+  { name: "Reviews", href: "/commentaires", icon: MessageSquare },
+  { name: "Sentiments", href: "/dashboard/sentiments", icon: BarChart3 },
 ];
-
-const isActive = (pathname: string, target: string) => {
-  if (target === "/products") return pathname.startsWith("/products");
-  if (target === "/commandes") return pathname.startsWith("/commandes");
-  if (target === "/categories") return pathname.startsWith("/categories");
-  if (target === "/commentaires") return pathname.startsWith("/commentaires");
-  return pathname === target;
-};
 
 export default function AdminNavbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-    }
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
     router.push("/login");
   };
 
+  const isActive = (href: string) => {
+    if (href === "/dashboard") {
+      return pathname === "/dashboard";
+    }
+    return pathname?.startsWith(href);
+  };
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900 text-white border-b border-gray-800">
-      <div className="container-main">
-        <div className="flex items-center justify-between h-18 lg:h-22">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="bg-white p-1 rounded-sm">
-              <LogoMark size="sm" className="text-black" showTagline={false} />
-            </div>
+    <>
+      {/* Desktop & Mobile Top Navbar */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+          ? "bg-[var(--background)]/90 backdrop-blur-xl border-b border-[var(--glass-border)]"
+          : "bg-[var(--background)]/50 backdrop-blur-md"
+        }`}>
+        <div className="container-main h-16 flex items-center justify-between gap-4">
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 text-white hover:bg-[var(--glass-bg)] rounded-xl transition-colors"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          {/* Logo */}
+          <Link href="/dashboard" className="flex items-center gap-3 group">
+            <span className="text-xl font-display text-gradient tracking-wider">
+              FRESHFITS
+            </span>
+            <span className="hidden sm:inline-block text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider px-2 py-1 glass-button rounded-lg">
+              Admin
+            </span>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-8">
-            {adminLinks.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`text-sm font-medium uppercase tracking-wider transition-colors py-2 ${isActive(pathname, href)
-                  ? "text-white border-b-2 border-white"
-                  : "text-gray-400 hover:text-white"
-                  }`}
-              >
-                {label}
-              </Link>
-            ))}
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${active
+                      ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg shadow-[var(--primary)]/25"
+                      : "text-[var(--foreground-muted)] hover:text-white hover:bg-[var(--glass-bg)]"
+                    }`}
+                >
+                  <Icon size={18} />
+                  <span className="hidden xl:inline">{item.name}</span>
+                </Link>
+              );
+            })}
           </div>
 
-          <div className="hidden lg:flex items-center gap-6">
-            <div className="relative">
-              <button
-                onClick={() => setShowQuickActions(!showQuickActions)}
-                className="flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-gray-300 hover:text-white transition-colors px-4 py-2 border border-gray-700 rounded hover:border-gray-500"
-              >
-                Actions Rapides
-              </button>
-
-              {showQuickActions && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-2 text-black animate-in fade-in zoom-in-95 duration-200">
-                  {quickActions.map((action) => (
-                    <Link
-                      key={action.label}
-                      href={action.href}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-sm"
-                      onClick={() => setShowQuickActions(false)}
-                    >
-                      <action.icon size={16} className="text-gray-500" />
-                      {action.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-              title="Déconnexion"
-            >
-              <LogOut size={20} />
-            </button>
-          </div>
-
+          {/* Logout Button */}
           <button
-            className="lg:hidden text-white p-2"
-            onClick={() => setOpen(!open)}
-            aria-label="Ouvrir le menu admin"
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-[var(--foreground-muted)] hover:text-[var(--error)] hover:bg-[var(--error)]/10 rounded-xl transition-all text-sm font-medium"
           >
-            {open ? <X size={24} /> : <Menu size={24} />}
+            <LogOut size={18} />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
+      </nav>
 
-        {open && (
-          <div className="lg:hidden fixed inset-0 top-16 bg-gray-900 z-40">
-            <div className="p-6 space-y-6">
-              {adminLinks.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-4 text-lg font-medium ${isActive(pathname, href) ? "text-white" : "text-gray-400"
-                    }`}
-                  onClick={() => setOpen(false)}
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <aside className="fixed top-0 left-0 h-full w-72 bg-[var(--background)]/95 backdrop-blur-xl border-r border-[var(--glass-border)] z-50 lg:hidden animate-slide-in">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-8">
+                <span className="text-xl font-display text-gradient">FRESHFITS</span>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 hover:bg-[var(--glass-bg)] rounded-xl transition-colors"
                 >
-                  <Icon size={20} />
-                  {label}
-                </Link>
-              ))}
-
-              <hr className="border-gray-800" />
-
-              <div className="space-y-4">
-                <p className="text-xs uppercase tracking-wider text-gray-500">Actions Rapides</p>
-                {quickActions.map((action) => (
-                  <Link
-                    key={action.label}
-                    href={action.href}
-                    className="flex items-center gap-3 text-gray-300 hover:text-white"
-                    onClick={() => setOpen(false)}
-                  >
-                    <action.icon size={18} />
-                    {action.label}
-                  </Link>
-                ))}
+                  <X size={20} />
+                </button>
               </div>
 
-              <hr className="border-gray-800" />
+              <nav className="space-y-2">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${active
+                          ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white"
+                          : "text-[var(--foreground-muted)] hover:text-white hover:bg-[var(--glass-bg)]"
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon size={20} />
+                        <span>{item.name}</span>
+                      </div>
+                      {active && <ChevronRight size={16} />}
+                    </Link>
+                  );
+                })}
+              </nav>
 
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  handleLogout();
-                }}
-                className="flex items-center gap-4 text-lg font-medium text-red-400 w-full"
-              >
-                <LogOut size={20} />
-                Déconnexion
-              </button>
+              <div className="absolute bottom-6 left-6 right-6">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[var(--error)] hover:bg-[var(--error)]/10 rounded-xl transition-all text-sm font-medium border border-[var(--error)]/30"
+                >
+                  <LogOut size={18} />
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </nav>
+          </aside>
+        </>
+      )}
+
+      {/* Spacer for fixed navbar */}
+      <div className="h-16" />
+    </>
   );
 }
-
-
-
-

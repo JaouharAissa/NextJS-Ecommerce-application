@@ -14,7 +14,6 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Form states
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [categoryName, setCategoryName] = useState("");
@@ -22,7 +21,6 @@ export default function CategoriesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Vérifier que c'est un admin
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
@@ -73,7 +71,7 @@ export default function CategoriesPage() {
         fetchCategories();
       } else {
         const error = await res.json();
-        alert(error.error || "Erreur lors de l'enregistrement");
+        alert(error.error || "Error saving category");
       }
     } catch (error) {
       console.error("Error saving category:", error);
@@ -87,7 +85,7 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer cette catégorie ?")) return;
+    if (!confirm("Delete this category?")) return;
 
     try {
       const token = localStorage.getItem("token");
@@ -103,49 +101,51 @@ export default function CategoriesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-black font-sans">
+    <div className="min-h-screen">
       <AdminNavbar />
 
-      <main className="container-main pt-24 pb-16">
+      <main className="container-main pt-8 pb-16">
         <div className="mb-8">
-          <h1 className="text-3xl font-serif font-medium mb-2">Catégories</h1>
-          <p className="text-gray-500 text-sm">Gérez les univers de votre boutique</p>
+          <h1 className="text-3xl font-heading font-bold text-white mb-2">Categories</h1>
+          <p className="text-[var(--foreground-muted)]">Manage your store's product categories</p>
         </div>
 
-        <div className="mb-12 pb-8 border-b border-gray-100">
+        <div className="mb-8">
           <button
             onClick={() => {
               setShowForm(true);
               setEditingId(null);
               setCategoryName("");
             }}
-            className="btn-primary"
+            className="btn-gradient"
           >
-            <Plus size={18} className="mr-2" />
-            Nouvelle catégorie
+            <Plus size={18} />
+            New Category
           </button>
         </div>
 
         {/* Form */}
         {showForm && (
-          <div className="bg-gray-50 p-8 mb-12 border border-gray-100">
-            <h2 className="text-lg font-medium mb-6 uppercase tracking-wider">
-              {editingId ? "Modifier la catégorie" : "Ajouter une catégorie"}
+          <div className="glass-card-static p-6 rounded-2xl mb-8 animate-fade-in">
+            <h2 className="text-lg font-heading font-bold text-white mb-4">
+              {editingId ? "Edit Category" : "Add Category"}
             </h2>
             <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4">
               <input
                 type="text"
-                placeholder="Nom de la catégorie"
+                placeholder="Category name"
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
-                className="flex-1 bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:border-black transition-colors"
+                className="glass-input flex-1"
                 required
               />
               <div className="flex gap-3">
@@ -156,15 +156,12 @@ export default function CategoriesPage() {
                     setEditingId(null);
                     setCategoryName("");
                   }}
-                  className="px-8 py-4 border border-gray-200 text-sm font-medium uppercase tracking-wider hover:bg-white transition-colors"
+                  className="btn-ghost"
                 >
-                  Annuler
+                  Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="bg-black text-white px-8 py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors"
-                >
-                  {editingId ? "Mettre à jour" : "Ajouter"}
+                <button type="submit" className="btn-gradient">
+                  {editingId ? "Update" : "Add"}
                 </button>
               </div>
             </form>
@@ -172,46 +169,48 @@ export default function CategoriesPage() {
         )}
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((category) => (
             <div
               key={category._id}
-              className="group border border-gray-100 p-6 hover:border-black transition-colors"
+              className="glass-card p-6 rounded-2xl group"
             >
               <div className="flex items-center justify-between mb-4">
-                <Tag size={20} className="text-gray-400 group-hover:text-black transition-colors" />
+                <div className="p-3 rounded-xl bg-[var(--accent)]/20">
+                  <Tag size={24} className="text-[var(--accent)]" />
+                </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleEdit(category)}
-                    className="p-2 hover:bg-gray-100 transition-colors"
+                    className="p-2 hover:bg-[var(--glass-bg)] rounded-lg transition-colors"
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(category._id)}
-                    className="p-2 hover:bg-gray-100 text-red-500 transition-colors"
+                    className="p-2 hover:bg-[var(--error)]/10 text-[var(--error)] rounded-lg transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
               </div>
-              <h3 className="text-xl font-medium">{category.nom}</h3>
-              <div className="mt-4 flex items-center text-xs uppercase tracking-wider text-gray-400 group-hover:text-black transition-colors">
-                Voir les produits <ArrowRight size={14} className="ml-2" />
+              <h3 className="text-xl font-heading font-bold text-white">{category.nom}</h3>
+              <div className="mt-4 flex items-center text-xs uppercase tracking-wider text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition-colors cursor-pointer">
+                View products <ArrowRight size={14} className="ml-2" />
               </div>
             </div>
           ))}
         </div>
 
         {categories.length === 0 && (
-          <div className="text-center py-24 border border-dashed border-gray-200">
-            <Tag className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-500 mb-4">Aucune catégorie disponible</p>
+          <div className="glass-card-static p-16 text-center rounded-2xl">
+            <Tag className="mx-auto text-[var(--foreground-muted)] mb-4" size={48} />
+            <p className="text-[var(--foreground-muted)] mb-4">No categories available</p>
             <button
               onClick={() => setShowForm(true)}
-              className="text-black underline underline-offset-4 hover:text-gray-600 transition-colors"
+              className="text-[var(--primary)] hover:text-[var(--accent)] transition-colors"
             >
-              Créer votre première catégorie
+              Create your first category
             </button>
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, User, Mail, Lock } from "lucide-react";
 import Link from "next/link";
 
 export default function RegisterPage() {
@@ -25,21 +25,21 @@ export default function RegisterPage() {
 
   // Validation functions
   const validateUsername = (value: string) => {
-    if (value.length < 3) return "Le nom d'utilisateur doit contenir au moins 3 caractères";
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) return "Seuls les lettres, chiffres et underscore sont autorisés";
+    if (value.length < 3) return "Username must be at least 3 characters";
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) return "Only letters, numbers, and underscores allowed";
     return "";
   };
 
   const validateEmail = (value: string) => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Email invalide";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Invalid email";
     return "";
   };
 
   const validatePassword = (value: string) => {
-    if (value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères";
-    if (!/[A-Z]/.test(value)) return "Doit contenir au moins une majuscule";
-    if (!/[a-z]/.test(value)) return "Doit contenir au moins une minuscule";
-    if (!/[0-9]/.test(value)) return "Doit contenir au moins un chiffre";
+    if (value.length < 8) return "Password must be at least 8 characters";
+    if (!/[A-Z]/.test(value)) return "Must contain at least one uppercase letter";
+    if (!/[a-z]/.test(value)) return "Must contain at least one lowercase letter";
+    if (!/[0-9]/.test(value)) return "Must contain at least one number";
     return "";
   };
 
@@ -52,16 +52,16 @@ export default function RegisterPage() {
     if (/[0-9]/.test(value)) strength++;
     if (/[^A-Za-z0-9]/.test(value)) strength++;
 
-    if (strength <= 2) return { label: "Faible", color: "bg-red-500", width: "33%" };
-    if (strength <= 4) return { label: "Moyen", color: "bg-yellow-500", width: "66%" };
-    return { label: "Fort", color: "bg-green-500", width: "100%" };
+    if (strength <= 2) return { label: "Weak", color: "from-[var(--error)] to-[var(--error)]", width: "33%", textColor: "text-[var(--error)]" };
+    if (strength <= 4) return { label: "Medium", color: "from-[var(--warning)] to-[var(--warning)]", width: "66%", textColor: "text-[var(--warning)]" };
+    return { label: "Strong", color: "from-[var(--success)] to-[var(--primary)]", width: "100%", textColor: "text-[var(--success)]" };
   };
 
   const usernameError = touched.username ? validateUsername(username) : "";
   const emailError = touched.email ? validateEmail(email) : "";
   const passwordError = touched.password ? validatePassword(password) : "";
   const confirmPasswordError = touched.confirmPassword && password !== confirmPassword
-    ? "Les mots de passe ne correspondent pas"
+    ? "Passwords do not match"
     : "";
 
   const isFormValid =
@@ -74,7 +74,6 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Mark all fields as touched
     setTouched({
       username: true,
       email: true,
@@ -83,7 +82,7 @@ export default function RegisterPage() {
     });
 
     if (!isFormValid) {
-      setMessage("Veuillez corriger les erreurs avant de continuer");
+      setMessage("Please fix the errors before continuing");
       return;
     }
 
@@ -100,82 +99,107 @@ export default function RegisterPage() {
     setIsLoading(false);
 
     if (res.ok) {
-      setMessage("Inscription réussie ! Redirection...");
+      setMessage("Registration successful! Redirecting...");
       setTimeout(() => router.push("/login"), 1500);
     } else {
-      setMessage(data.error || "Une erreur est survenue");
+      setMessage(data.error || "An error occurred");
     }
   };
 
   const passwordStrength = password ? getPasswordStrength(password) : null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-12">
-          <Link href="/" className="text-2xl font-serif font-bold tracking-tight text-black">
-            FreshFits
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Content */}
+      <div className="w-full max-w-md relative z-10 animate-fade-in">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <Link href="/" className="inline-block group">
+            <h1 className="text-4xl font-display text-gradient tracking-wider">
+              FRESHFITS
+            </h1>
+            <div className="h-1 w-0 group-hover:w-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] transition-all duration-300 mt-2 mx-auto rounded-full"></div>
           </Link>
         </div>
 
-        <div className="space-y-8">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-medium uppercase tracking-wider">Créer un compte</h1>
-            <p className="text-sm text-gray-500">Rejoignez notre communauté</p>
+        {/* Glass Card */}
+        <div className="glass-card-static p-8 md:p-10">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-heading font-bold text-white mb-2">Create Account</h2>
+            <p className="text-[var(--foreground-muted)] text-sm">
+              Join the FreshFits community
+            </p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-6">
+          <form onSubmit={handleRegister} className="space-y-5">
             {/* Username */}
-            <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-gray-500">
-                Nom d'utilisateur
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
+                Username
               </label>
-              <input
-                type="text"
-                placeholder="Votre nom d'utilisateur"
-                className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 ${usernameError ? "border-red-300" : "border-gray-300 focus:border-black"
-                  }`}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onBlur={() => setTouched({ ...touched, username: true })}
-                required
-              />
+              <div className="relative">
+                <User
+                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${username ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="Your username"
+                  className={`glass-input w-full transition-all duration-300 ${username ? 'pl-4' : 'pl-14'} ${usernameError ? "border-[var(--error)]" : ""}`}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onBlur={() => setTouched({ ...touched, username: true })}
+                  required
+                />
+              </div>
               {usernameError && (
-                <p className="text-xs text-red-500 mt-1">{usernameError}</p>
+                <p className="text-xs text-[var(--error)] flex items-center gap-1">
+                  <XCircle size={12} /> {usernameError}
+                </p>
               )}
             </div>
 
             {/* Email */}
-            <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-gray-500">
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
                 Email
               </label>
-              <input
-                type="email"
-                placeholder="votre@email.com"
-                className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 ${emailError ? "border-red-300" : "border-gray-300 focus:border-black"
-                  }`}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={() => setTouched({ ...touched, email: true })}
-                required
-              />
+              <div className="relative">
+                <Mail
+                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${email ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  size={18}
+                />
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  className={`glass-input w-full transition-all duration-300 ${email ? 'pl-4' : 'pl-14'} ${emailError ? "border-[var(--error)]" : ""}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched({ ...touched, email: true })}
+                  required
+                />
+              </div>
               {emailError && (
-                <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                <p className="text-xs text-[var(--error)] flex items-center gap-1">
+                  <XCircle size={12} /> {emailError}
+                </p>
               )}
             </div>
 
             {/* Password */}
-            <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-gray-500">
-                Mot de passe
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
+                Password
               </label>
               <div className="relative">
+                <Lock
+                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${password ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  size={18}
+                />
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 pr-10 ${passwordError ? "border-red-300" : "border-gray-300 focus:border-black"
-                    }`}
+                  className={`glass-input w-full pr-12 transition-all duration-300 ${password ? 'pl-4' : 'pl-14'} ${passwordError ? "border-[var(--error)]" : ""}`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={() => setTouched({ ...touched, password: true })}
@@ -184,26 +208,24 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
 
-              {/* Password strength indicator */}
+              {/* Password Strength Indicator */}
               {password && passwordStrength && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] uppercase tracking-wider text-gray-400">Force</span>
-                    <span className={`text-[10px] uppercase tracking-wider font-medium ${passwordStrength.label === "Fort" ? "text-green-600" :
-                      passwordStrength.label === "Moyen" ? "text-yellow-600" : "text-red-600"
-                      }`}>
+                <div className="space-y-2 mt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-muted)]">Strength</span>
+                    <span className={`text-[10px] uppercase tracking-wider font-semibold ${passwordStrength.textColor}`}>
                       {passwordStrength.label}
                     </span>
                   </div>
-                  <div className="h-0.5 bg-gray-100 w-full">
+                  <div className="h-1.5 bg-[var(--glass-bg)] rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${passwordStrength.color} transition-all duration-300`}
+                      className={`h-full bg-gradient-to-r ${passwordStrength.color} transition-all duration-500 rounded-full`}
                       style={{ width: passwordStrength.width }}
                     />
                   </div>
@@ -211,21 +233,26 @@ export default function RegisterPage() {
               )}
 
               {passwordError && (
-                <p className="text-xs text-red-500 mt-1">{passwordError}</p>
+                <p className="text-xs text-[var(--error)] flex items-center gap-1">
+                  <XCircle size={12} /> {passwordError}
+                </p>
               )}
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-gray-500">
-                Confirmer le mot de passe
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
+                Confirm Password
               </label>
               <div className="relative">
+                <Lock
+                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${confirmPassword ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  size={18}
+                />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`w-full border-b py-3 text-sm focus:outline-none transition-colors bg-transparent placeholder:text-gray-300 pr-10 ${confirmPasswordError ? "border-red-300" : "border-gray-300 focus:border-black"
-                    }`}
+                  className={`glass-input w-full pr-12 transition-all duration-300 ${confirmPassword ? 'pl-4' : 'pl-14'} ${confirmPasswordError ? "border-[var(--error)]" : ""}`}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   onBlur={() => setTouched({ ...touched, confirmPassword: true })}
@@ -234,48 +261,77 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-white transition-colors"
                 >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {confirmPasswordError && (
-                <p className="text-xs text-red-500 mt-1">{confirmPasswordError}</p>
+                <p className="text-xs text-[var(--error)] flex items-center gap-1">
+                  <XCircle size={12} /> {confirmPasswordError}
+                </p>
               )}
             </div>
 
+            {/* Message */}
+            {message && (
+              <div className={`p-4 rounded-lg flex items-center gap-3 animate-fade-in ${message.includes("successful")
+                ? "bg-[var(--success)]/20 border border-[var(--success)]/30"
+                : "bg-[var(--error)]/20 border border-[var(--error)]/30"
+                }`}>
+                {message.includes("successful") ? (
+                  <CheckCircle2 size={18} className="text-[var(--success)] flex-shrink-0" />
+                ) : (
+                  <AlertCircle size={18} className="text-[var(--error)] flex-shrink-0" />
+                )}
+                <span className={`text-sm ${message.includes("successful") ? "text-[var(--success)]" : "text-[var(--error)]"}`}>
+                  {message}
+                </span>
+              </div>
+            )}
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black text-white py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-8"
+              className="btn-gradient w-full py-4 text-base disabled:opacity-50 disabled:cursor-not-allowed mt-4"
             >
-              {isLoading ? "Inscription..." : "S'inscrire"}
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Creating account...</span>
+                </div>
+              ) : (
+                <span>Create Account</span>
+              )}
             </button>
-
-            {message && (
-              <div className={`p-3 text-xs flex items-center gap-2 ${message.includes("réussie") || message.includes("successful")
-                ? "bg-green-50 text-green-700"
-                : "bg-red-50 text-red-700"
-                }`}>
-                {message.includes("réussie") || message.includes("successful") ? (
-                  <CheckCircle2 size={14} />
-                ) : (
-                  <AlertCircle size={14} />
-                )}
-                <span>{message}</span>
-              </div>
-            )}
           </form>
 
+          {/* Divider */}
+          <div className="my-8 flex items-center gap-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[var(--glass-border)] to-transparent"></div>
+            <span className="text-xs text-[var(--foreground-muted)] uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[var(--glass-border)] to-transparent"></div>
+          </div>
+
+          {/* Login Link */}
           <div className="text-center">
-            <p className="text-sm text-gray-500">
-              Vous avez déjà un compte?{" "}
-              <Link href="/login" className="text-black underline underline-offset-4 hover:text-gray-600 transition-colors">
-                Se connecter
+            <p className="text-[var(--foreground-muted)] text-sm">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-[var(--primary)] hover:text-[var(--accent)] transition-colors font-medium"
+              >
+                Sign in
               </Link>
             </p>
           </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center mt-8 text-xs text-[var(--foreground-muted)]">
+          ©2024 FreshFits. Premium Streetwear.
+        </p>
       </div>
     </div>
   );

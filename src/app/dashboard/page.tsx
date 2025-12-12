@@ -9,15 +9,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
 } from "recharts";
-import { Package, Tag, TrendingUp, MessageSquare, AlertTriangle, PieChart as PieChartIcon, ArrowRight } from "lucide-react";
+import { Package, Tag, TrendingUp, MessageSquare, AlertTriangle, Star, ArrowRight } from "lucide-react";
 import AdminNavbar from "@/app/components/AdminNavbar";
-import DashboardStats from "@/app/components/dashboard/DashboardStats";
 import AIAlertsTable from "@/app/components/dashboard/AIAlertsTable";
 
 interface Product {
@@ -61,9 +59,9 @@ interface ProductSentimentStats {
 }
 
 const SENTIMENT_COLORS = {
-  positif: "#000000", // Black for positive
-  neutre: "#9ca3af",  // Gray for neutral
-  negatif: "#ef4444", // Red for negative (keep for alerts)
+  positif: "#10b981",
+  neutre: "#f59e0b",
+  negatif: "#ef4444",
 };
 
 export default function DashboardPage() {
@@ -99,20 +97,17 @@ export default function DashboardPage() {
         return;
       }
 
-      // Fetch products
       const prodRes = await fetch("/api/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const prodData = await prodRes.json();
       setProducts(Array.isArray(prodData) ? prodData : []);
 
-      // Fetch categories
       const catRes = await fetch("/api/categories", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const catData = await catRes.json();
 
-      // Calculate stats
       const avgPrice = prodData.length > 0
         ? prodData.reduce((sum: number, p: Product) => sum + p.prix, 0) / prodData.length
         : 0;
@@ -134,11 +129,8 @@ export default function DashboardPage() {
       if (ordersRes.ok) {
         const ordersData: Commande[] = await ordersRes.json();
         setRecentOrders(ordersData.slice(0, 6));
-      } else {
-        setRecentOrders([]);
       }
 
-      // Fetch sentiment stats
       const sentimentRes = await fetch("/api/stats/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -149,15 +141,17 @@ export default function DashboardPage() {
 
       setLoading(false);
     } catch (error) {
-      console.error("Erreur chargement données :", error);
+      console.error("Error loading data:", error);
       setLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -165,164 +159,230 @@ export default function DashboardPage() {
   const totalReviews = productSentimentStats.reduce((acc, curr) => acc + curr.total, 0);
   const negativeReviewsCount = productSentimentStats.filter(s => s.negatifPercent > 20 && s.total > 0).length;
 
+  const globalStats = productSentimentStats.reduce(
+    (acc, p) => ({
+      positifs: acc.positifs + p.positifs,
+      negatifs: acc.negatifs + p.negatifs,
+      neutres: acc.neutres + p.neutres,
+    }),
+    { positifs: 0, negatifs: 0, neutres: 0 }
+  );
+
+  const pieData = [
+    { name: "Positive", value: globalStats.positifs },
+    { name: "Neutral", value: globalStats.neutres },
+    { name: "Negative", value: globalStats.negatifs },
+  ].filter((item) => item.value > 0);
+
+  // Score Moyenne par Produit data (top 8 products by score)
+  const scoreData = products
+    .filter(p => p.score_moyen > 0)
+    .sort((a, b) => b.score_moyen - a.score_moyen)
+    .slice(0, 8)
+    .map(p => ({
+      nom: p.nom.length > 12 ? p.nom.substring(0, 12) + '...' : p.nom,
+      score: p.score_moyen,
+      fullName: p.nom,
+    }));
+
+  const statCards = [
+    { label: "Total Products", value: stats.totalProducts, icon: Package, color: "var(--primary)" },
+    { label: "Categories", value: stats.totalCategories, icon: Tag, color: "var(--accent)" },
+    { label: "Avg Price", value: `${stats.averagePrice.toFixed(0)} DT`, icon: TrendingUp, color: "var(--success)" },
+    { label: "Total Reviews", value: totalReviews, icon: MessageSquare, color: "var(--pink)" },
+  ];
+
   return (
-    <div className="min-h-screen bg-white text-black font-sans">
+    <div className="min-h-screen">
       <AdminNavbar />
 
-      <main className="container-main pb-16 pt-24 space-y-12">
-        {/* Header Section */}
-        <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-8">
+      <main className="container-main pb-16 pt-8 space-y-8">
+        {/* Header */}
+        <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">Vue d'ensemble</p>
-            <h1 className="text-4xl font-serif font-medium">Tableau de bord</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)] mb-2">Overview</p>
+            <h1 className="text-3xl font-heading font-bold text-white">Dashboard</h1>
           </div>
-          <div className="flex gap-8">
-            <div className="text-right">
-              <p className="text-xs uppercase tracking-wider text-gray-400 mb-1">Date</p>
-              <p className="text-xl font-light">{new Date().toLocaleDateString('fr-FR', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-            </div>
+          <div className="glass-card-static px-4 py-2 rounded-xl">
+            <p className="text-sm text-[var(--foreground-muted)]">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
           </div>
         </section>
 
         {/* Stats Grid */}
-        <DashboardStats
-          stats={stats}
-          totalOrders={recentOrders.length} // Note: This is just recent orders count, ideally should be total orders from API
-          totalReviews={totalReviews}
-          negativeReviewsCount={negativeReviewsCount}
-        />
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statCards.map((stat, idx) => {
+            const Icon = stat.icon;
+            return (
+              <div key={idx} className="stat-card hover-lift">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: `${stat.color}20` }}>
+                    <Icon size={24} style={{ color: stat.color }} />
+                  </div>
+                </div>
+                <p className="stat-value">{stat.value}</p>
+                <p className="stat-label mt-1">{stat.label}</p>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* Alert */}
+        {negativeReviewsCount > 0 && (
+          <div className="glass-card-static p-4 border-l-4 border-[var(--warning)] rounded-xl flex items-center gap-4">
+            <AlertTriangle size={24} className="text-[var(--warning)]" />
+            <div>
+              <p className="font-medium text-white">{negativeReviewsCount} products with high negative sentiment</p>
+              <p className="text-sm text-[var(--foreground-muted)]">Review these products in the Sentiments page</p>
+            </div>
+            <button
+              onClick={() => router.push("/dashboard/sentiments")}
+              className="ml-auto btn-ghost text-sm"
+            >
+              View <ArrowRight size={16} />
+            </button>
+          </div>
+        )}
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Global Sentiment */}
-          <div>
-            <h2 className="text-xl font-serif font-medium mb-6 border-b border-gray-100 pb-4">Analyse des Sentiments</h2>
-            {productSentimentStats.length > 0 ? (() => {
-              const globalStats = productSentimentStats.reduce(
-                (acc, p) => ({
-                  positifs: acc.positifs + p.positifs,
-                  negatifs: acc.negatifs + p.negatifs,
-                  neutres: acc.neutres + p.neutres,
-                }),
-                { positifs: 0, negatifs: 0, neutres: 0 }
-              );
-              const total = globalStats.positifs + globalStats.negatifs + globalStats.neutres;
-              const pieData = [
-                { name: "Positif", value: globalStats.positifs },
-                { name: "Neutre", value: globalStats.neutres },
-                { name: "Négatif", value: globalStats.negatifs },
-              ].filter((item) => item.value > 0);
-
-              return (
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, index) => {
-                          const colorKey = entry.name === "Positif" ? "positif" : entry.name === "Neutre" ? "neutre" : "negatif";
-                          return <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[colorKey]} stroke="none" />;
-                        })}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: '0px', boxShadow: 'none' }}
-                        itemStyle={{ color: '#000', fontSize: '12px', textTransform: 'uppercase' }}
-                      />
-                      <Legend iconType="circle" />
-                    </PieChart>
-                  </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sentiment Pie Chart */}
+          <div className="glass-card-static p-6 rounded-2xl">
+            <h2 className="text-lg font-heading font-bold text-white mb-6">Sentiment Analysis</h2>
+            {pieData.length > 0 ? (
+              <div className="h-[280px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => {
+                        const colorKey = entry.name === "Positive" ? "positif" : entry.name === "Neutral" ? "neutre" : "negatif";
+                        return <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[colorKey]} stroke="transparent" />;
+                      })}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--background-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '8px',
+                      }}
+                      itemStyle={{ color: 'var(--foreground)' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[280px] flex items-center justify-center text-[var(--foreground-muted)]">
+                No sentiment data
+              </div>
+            )}
+            <div className="flex justify-center gap-6 mt-4">
+              {[
+                { name: "Positive", color: SENTIMENT_COLORS.positif },
+                { name: "Neutral", color: SENTIMENT_COLORS.neutre },
+                { name: "Negative", color: SENTIMENT_COLORS.negatif },
+              ].map((item) => (
+                <div key={item.name} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                  <span className="text-sm text-[var(--foreground-muted)]">{item.name}</span>
                 </div>
-              );
-            })() : (
-              <div className="h-[300px] flex items-center justify-center text-gray-400 bg-gray-50">
-                Pas de données
+              ))}
+            </div>
+          </div>
+
+          {/* Score Moyenne par Produit */}
+          <div className="glass-card-static p-6 rounded-2xl">
+            <div className="flex items-center gap-2 mb-6">
+              <Star className="text-[var(--warning)]" size={20} />
+              <h2 className="text-lg font-heading font-bold text-white">Score Moyenne par Produit</h2>
+            </div>
+            {scoreData.length > 0 ? (
+              <div className="h-[280px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={scoreData} layout="vertical" margin={{ left: 0, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--glass-border)" />
+                    <XAxis type="number" domain={[0, 5]} stroke="var(--foreground-muted)" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis dataKey="nom" type="category" width={80} stroke="var(--foreground-muted)" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      cursor={{ fill: 'var(--glass-bg)' }}
+                      contentStyle={{
+                        backgroundColor: 'var(--background-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '8px',
+                      }}
+                      formatter={(value: number, name: string, props: any) => [
+                        `${value.toFixed(2)} / 5`,
+                        props.payload.fullName
+                      ]}
+                    />
+                    <Bar dataKey="score" fill="url(#gradientScore)" radius={[0, 4, 4, 0]} barSize={20} />
+                    <defs>
+                      <linearGradient id="gradientScore" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="var(--warning)" />
+                        <stop offset="100%" stopColor="var(--success)" />
+                      </linearGradient>
+                    </defs>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[280px] flex items-center justify-center text-[var(--foreground-muted)]">
+                No product scores yet
               </div>
             )}
           </div>
-
-          {/* Price Distribution */}
-          <div>
-            <h2 className="text-xl font-serif font-medium mb-6 border-b border-gray-100 pb-4">Distribution des Prix</h2>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={products.slice(0, 8)}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                  <XAxis dataKey="nom" hide />
-                  <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    cursor={{ fill: '#f9fafb' }}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: '0px' }}
-                  />
-                  <Bar dataKey="prix" fill="#000000" radius={[0, 0, 0, 0]} barSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Score Distribution */}
-          <div className="lg:col-span-2">
-            <h2 className="text-xl font-serif font-medium mb-6 border-b border-gray-100 pb-4">Score Moyen par Produit</h2>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={products.slice(0, 8)}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                  <XAxis dataKey="nom" hide />
-                  <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} axisLine={false} domain={[0, 5]} />
-                  <Tooltip
-                    cursor={{ fill: '#f9fafb' }}
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: '0px' }}
-                  />
-                  <Bar dataKey="score_moyen" fill="#000000" radius={[4, 4, 0, 0]} barSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
         </div>
 
+        {/* AI Sentiment Analysis Table */}
+        <AIAlertsTable sentimentStats={productSentimentStats} />
+
         {/* Recent Orders Table */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-serif font-medium">Commandes Récentes</h2>
-            <button onClick={() => router.push("/commandes")} className="text-sm font-medium underline underline-offset-4 hover:text-gray-600">
-              Voir tout
+        <section className="glass-card-static rounded-2xl overflow-hidden">
+          <div className="p-6 flex items-center justify-between border-b border-[var(--glass-border)]">
+            <h2 className="text-lg font-heading font-bold text-white">Recent Orders</h2>
+            <button onClick={() => router.push("/commandes")} className="text-sm text-[var(--primary)] hover:text-[var(--accent)] transition-colors">
+              View all →
             </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="glass-table">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Client</th>
-                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Date</th>
-                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Montant</th>
-                  <th className="py-4 font-medium text-xs uppercase tracking-wider text-gray-500">Statut</th>
+                <tr>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {recentOrders.length > 0 ? (
                   recentOrders.map((order) => (
-                    <tr key={order._id} className="group hover:bg-gray-50 transition-colors">
-                      <td className="py-4">
-                        <div className="font-medium">{order.utilisateur?.username || "—"}</div>
-                        <div className="text-xs text-gray-500">{order.utilisateur?.email}</div>
+                    <tr key={order._id}>
+                      <td>
+                        <div>
+                          <p className="font-medium text-white">{order.utilisateur?.username || "—"}</p>
+                          <p className="text-xs text-[var(--foreground-muted)]">{order.utilisateur?.email}</p>
+                        </div>
                       </td>
-                      <td className="py-4 text-sm text-gray-600">
-                        {new Date(order.dateCommande).toLocaleDateString("fr-FR")}
+                      <td className="text-[var(--foreground-muted)]">
+                        {new Date(order.dateCommande).toLocaleDateString("en-US")}
                       </td>
-                      <td className="py-4 font-medium">
+                      <td className="font-semibold text-white">
                         {order.montantTotal?.toFixed(2)} DT
                       </td>
-                      <td className="py-4">
-                        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium uppercase tracking-wide border ${order.statut === "livré" ? "border-green-200 text-green-700 bg-green-50" :
-                          order.statut === "annulé" ? "border-red-200 text-red-700 bg-red-50" :
-                            "border-gray-200 text-gray-700 bg-gray-50"
+                      <td>
+                        <span className={`badge ${order.statut === "livree" ? "badge-success" :
+                            order.statut === "annulee" ? "badge-error" :
+                              "badge-warning"
                           }`}>
                           {order.statut?.replace("_", " ")}
                         </span>
@@ -331,16 +391,13 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center text-gray-400">Aucune commande récente</td>
+                    <td colSpan={4} className="text-center py-8 text-[var(--foreground-muted)]">No recent orders</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
         </section>
-
-        {/* AI Alerts Section (Moved to bottom) */}
-        <AIAlertsTable sentimentStats={productSentimentStats} />
       </main>
     </div>
   );

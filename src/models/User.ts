@@ -1,33 +1,95 @@
+// models/User.ts
 import mongoose, { Document, Schema } from "mongoose";
-import bcrypt from "bcryptjs";
 
-export interface IUser extends Document {
-  username: string;
-  email: string;
-  password: string;
-  role: "user" | "admin";
-  comparePassword(candidatePassword: string): Promise<boolean>;
+// Interface pour un item du panier
+export interface ICartItem {
+    produitId: string;
+    nom: string;
+    image?: string;
+    prix: number;
+    quantite: number;
 }
 
-const userSchema = new Schema<IUser>({
-  username: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true },
-  password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ["user", "admin"], default: "user" },
+// Interface pour l'utilisateur
+export interface IUser extends Document {
+    username: string;
+    email: string;
+    password: string;
+    role: "user" | "admin";
+    cart: ICartItem[];
+    favorites: mongoose.Types.ObjectId[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+// Schéma pour les items du panier
+const CartItemSchema = new Schema<ICartItem>({
+    produitId: {
+        type: String,
+        required: true
+    },
+    nom: {
+        type: String,
+        required: true
+    },
+    image: {
+        type: String
+    },
+    prix: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    quantite: {
+        type: Number,
+        required: true,
+        default: 1,
+        min: 1
+    }
 });
 
-// hash password
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
+// Schéma utilisateur
+const UserSchema = new Schema<IUser>(
+    {
+        username: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true,
+            minlength: 3
+        },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+            trim: true
+        },
+        password: {
+            type: String,
+            required: true,
+            minlength: 6
+        },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user"
+        },
+        cart: {
+            type: [CartItemSchema],
+            default: []
+        },
+        favorites: [{
+            type: Schema.Types.ObjectId,
+            ref: "Produit"
+        }]
+    },
+    { timestamps: true }
+);
 
-// compare password
-userSchema.methods.comparePassword = async function (candidatePassword: string) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
+// Index pour optimiser les recherches
+UserSchema.index({ email: 1 });
+UserSchema.index({ username: 1 });
 
-const User = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
+const User = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 export default User;

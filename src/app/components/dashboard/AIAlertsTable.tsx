@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, TrendingDown } from "lucide-react";
+import { AlertTriangle, TrendingDown, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 interface ProductSentimentStats {
@@ -25,58 +25,66 @@ export default function AIAlertsTable({ sentimentStats }: AIAlertsTableProps) {
 
     if (productsWithReviews.length === 0) {
         return (
-            <div className="border border-gray-100 bg-white rounded-xl p-8 text-center">
-                <p className="text-gray-500">No sentiment data available yet.</p>
+            <div className="glass-card-static p-8 text-center rounded-2xl">
+                <p className="text-[var(--foreground-muted)]">No sentiment data available yet.</p>
             </div>
         );
     }
 
     return (
-        <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+        <div className="glass-card-static rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-[var(--glass-border)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-black/5 rounded-full text-black">
-                        <AlertTriangle size={20} />
+                    <div className="p-2 rounded-xl bg-[var(--accent)]/20">
+                        <AlertTriangle size={20} className="text-[var(--accent)]" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-serif font-medium text-gray-900">AI Sentiment Analysis</h3>
-                        <p className="text-sm text-gray-500">Sentiment breakdown by product</p>
+                        <h3 className="text-lg font-heading font-bold text-white">AI Sentiment Analysis</h3>
+                        <p className="text-xs text-[var(--foreground-muted)]">Sentiment breakdown by product</p>
                     </div>
                 </div>
-                <Link href="/dashboard/sentiments" className="text-sm font-medium underline underline-offset-4 hover:text-gray-600">
-                    Show All
+                <Link
+                    href="/dashboard/sentiments"
+                    className="text-sm text-[var(--primary)] hover:text-[var(--accent)] transition-colors flex items-center gap-1"
+                >
+                    View All <ArrowRight size={14} />
                 </Link>
             </div>
 
             <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50/50">
+                <table className="glass-table">
+                    <thead>
                         <tr>
-                            <th className="py-4 px-6 text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
-                            <th className="py-4 px-6 text-xs font-medium uppercase tracking-wider text-gray-500">Total Reviews</th>
-                            <th className="py-4 px-6 text-xs font-medium uppercase tracking-wider text-gray-500">Negative</th>
-                            <th className="py-4 px-6 text-xs font-medium uppercase tracking-wider text-gray-500">Negative Rate</th>
-                            <th className="py-4 px-6 text-xs font-medium uppercase tracking-wider text-gray-500">Positive Rate</th>
+                            <th>Product</th>
+                            <th>Reviews</th>
+                            <th>Negative</th>
+                            <th>Neg. Rate</th>
+                            <th>Pos. Rate</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody>
                         {productsWithReviews.slice(0, 5).map((stat) => {
                             const isAlert = stat.negatifPercent > 20;
                             return (
-                                <tr key={stat.produitId} className={`hover:bg-gray-50 transition-colors ${isAlert ? "bg-red-50/30" : ""}`}>
-                                    <td className="py-4 px-6 font-medium text-gray-900">{stat.nom}</td>
-                                    <td className="py-4 px-6 text-gray-600">{stat.total}</td>
-                                    <td className={`py-4 px-6 font-medium ${isAlert ? "text-red-600" : "text-gray-600"}`}>{stat.negatifs}</td>
-                                    <td className="py-4 px-6">
-                                        <div className={`flex items-center gap-2 font-bold ${isAlert ? "text-red-600" : "text-green-600"}`}>
-                                            {isAlert ? <TrendingDown size={16} /> : null}
+                                <tr
+                                    key={stat.produitId}
+                                    className={isAlert ? "bg-[var(--error)]/5" : ""}
+                                >
+                                    <td className="font-medium text-white">{stat.nom}</td>
+                                    <td className="text-[var(--foreground-muted)]">{stat.total}</td>
+                                    <td className={isAlert ? "text-[var(--error)] font-semibold" : "text-[var(--foreground-muted)]"}>
+                                        {stat.negatifs}
+                                    </td>
+                                    <td>
+                                        <div className={`flex items-center gap-2 font-semibold ${isAlert ? "text-[var(--error)]" : "text-[var(--success)]"}`}>
+                                            {isAlert && <TrendingDown size={14} />}
                                             {stat.negatifPercent.toFixed(1)}%
                                         </div>
                                     </td>
-                                    <td className="py-4 px-6">
-                                        <div className="flex items-center gap-2 font-bold text-green-600">
+                                    <td>
+                                        <span className="font-semibold text-[var(--success)]">
                                             {stat.positifPercent.toFixed(1)}%
-                                        </div>
+                                        </span>
                                     </td>
                                 </tr>
                             );

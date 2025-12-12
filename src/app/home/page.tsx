@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Heart, Search, X, Plus, Minus, ChevronDown, Filter } from "lucide-react";
+import { ShoppingCart, Heart, Search, X, Plus, Minus, ChevronDown, Filter, Star, Sparkles } from "lucide-react";
 
 interface Product {
   _id: string;
@@ -75,22 +75,73 @@ export default function HomePage() {
     }
 
     fetchData();
+
+    // Charger le panier depuis l'API
+    const loadCart = async () => {
+      try {
+        const res = await fetch("/api/cart", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setCartItems(data.cart || []);
+        }
+      } catch (error) {
+        console.error("Error loading cart:", error);
+      }
+    };
+
+    loadCart();
   }, [router]);
 
+  // Sauvegarder le panier dans la base de données avec debounce
   useEffect(() => {
-    try {
-      const storedFavorites = localStorage.getItem("favorites");
-      if (storedFavorites) {
-        setFavoriteItems(JSON.parse(storedFavorites));
+    const saveCart = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        await fetch("/api/cart", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ cart: cartItems })
+        });
+      } catch (error) {
+        console.error("Error saving cart:", error);
       }
-    } catch (error) {
-      console.error("Error loading favorites:", error);
-    }
-  }, []);
+    };
+
+    // Debounce pour éviter trop de requêtes
+    const timeoutId = setTimeout(saveCart, 800);
+    return () => clearTimeout(timeoutId);
+  }, [cartItems]);
 
   useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify(favoriteItems));
-  }, [favoriteItems]);
+    // Charger les favoris depuis l'API
+    const loadFavorites = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch("/api/favorites", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setFavoriteItems(data.favorites || []);
+        }
+      } catch (error) {
+        console.error("Error loading favorites:", error);
+      }
+    };
+
+    loadFavorites();
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -111,12 +162,6 @@ export default function HomePage() {
       console.error("Error fetching data:", error);
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    router.push("/login");
   };
 
   const addToCart = (product: Product) => {
@@ -158,25 +203,52 @@ export default function HomePage() {
     setCartItems((prev) => prev.filter((item) => item.produitId !== produitId));
   };
 
-  const toggleFavorite = (product: Product) => {
-    setFavoriteItems((prev) => {
-      const exists = prev.some((item) => item._id === product._id);
-      if (exists) {
-        return prev.filter((item) => item._id !== product._id);
+  const toggleFavorite = async (product: Product) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
       }
-      return [...prev, product];
-    });
+
+      // Mise à jour optimiste du state local
+      setFavoriteItems((prev) => {
+        const exists = prev.some((item) => item._id === product._id);
+        if (exists) {
+          return prev.filter((item) => item._id !== product._id);
+        }
+        return [...prev, product];
+      });
+
+      // Appeler l'API pour persister le changement
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ productId: product._id })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Synchroniser avec les données du serveur
+        setFavoriteItems(data.favorites || []);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
   };
 
   const handleCheckout = async () => {
     setHasAttemptedSubmit(true);
     if (!cartItems.length) {
-      setFeedback({ type: "error", message: "Ajoutez au moins un produit au panier." });
+      setFeedback({ type: "error", message: "Add at least one product to cart." });
       return;
     }
 
     if (!validateDeliveryInfo()) {
-      setFeedback({ type: "error", message: "Merci de remplir toutes les informations de livraison." });
+      setFeedback({ type: "error", message: "Please fill all delivery information." });
       return;
     }
 
@@ -207,14 +279,14 @@ export default function HomePage() {
 
       const data = await res.json();
       if (!res.ok || !data.url) {
-        throw new Error(data.error || "Impossible de démarrer le paiement Stripe.");
+        throw new Error(data.error || "Unable to start Stripe payment.");
       }
 
       window.location.href = data.url as string;
     } catch (error) {
       setFeedback({
         type: "error",
-        message: error instanceof Error ? error.message : "Une erreur est survenue.",
+        message: error instanceof Error ? error.message : "An error occurred.",
       });
     } finally {
       setIsSubmitting(false);
@@ -226,17 +298,12 @@ export default function HomePage() {
     return requiredFields.every((field) => deliveryInfo[field].trim().length > 0);
   };
 
-  const getInputClasses = (hasError: boolean) =>
-    `w-full border-b p-4 text-base bg-transparent placeholder:text-gray-400 focus:outline-none focus:border-black transition ${hasError ? "border-red-500" : "border-gray-200"}`;
-
   const deliveryFieldError = (value: string) => hasAttemptedSubmit && !value.trim();
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantite, 0);
   const cartTotal = cartItems.reduce((total, item) => total + item.prix * item.quantite, 0);
-  const favoriteCount = favoriteItems.length;
   const isFavorite = (produitId: string) => favoriteItems.some((item) => item._id === produitId);
 
-  // Filter and sort products
   const filteredProducts = products
     .filter((product) => {
       const matchesCategory = selectedCategory === "all" || product.categorie._id === selectedCategory;
@@ -260,14 +327,16 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-black"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen">
       <Navbar
         links={navLinks}
         onSearch={setSearchQuery}
@@ -275,56 +344,70 @@ export default function HomePage() {
         cartCount={cartCount}
         onCartClick={() => setIsCartOpen(true)}
       />
-      {/* Header / Filter Bar */}
-      <div className="sticky top-20 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="container-main py-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-            <button
-              onClick={() => setSelectedCategory("all")}
-              className={`text-base font-medium whitespace-nowrap px-8 py-4 rounded-full transition-colors ${selectedCategory === "all" ? "bg-black text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-            >
-              All
-            </button>
-            {categories.map((cat) => (
+
+      {/* Hero Section */}
+      <section className="container-main py-12">
+        <div className="glass-card-static p-8 md:p-12 text-center mb-12">
+          <h1 className="text-4xl md:text-6xl font-display text-gradient mb-4">
+            DISCOVER THE LATEST
+          </h1>
+          <p className="text-[var(--foreground-muted)] text-lg max-w-2xl mx-auto">
+            Premium streetwear collection curated for the modern lifestyle
+          </p>
+        </div>
+      </section>
+
+      {/* Filter Bar */}
+      <div className="sticky top-20 z-40">
+        <div className="container-main">
+          <div className="glass-card-static p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Categories */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 md:pb-0">
               <button
-                key={cat._id}
-                onClick={() => setSelectedCategory(cat._id)}
-                className={`text-base font-medium whitespace-nowrap px-8 py-4 rounded-full transition-colors ${selectedCategory === cat._id ? "bg-black text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                onClick={() => setSelectedCategory("all")}
+                className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === "all"
+                  ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white"
+                  : "glass-button hover:text-white"
                   }`}
               >
-                {cat.nom}
+                All
               </button>
-            ))}
-          </div>
+              {categories.map((cat) => (
+                <button
+                  key={cat._id}
+                  onClick={() => setSelectedCategory(cat._id)}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === cat._id
+                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white"
+                    : "glass-button hover:text-white"
+                    }`}
+                >
+                  {cat.nom}
+                </button>
+              ))}
+            </div>
 
-          <div className="flex items-center gap-4 flex-wrap">
             {/* Sort Dropdown */}
             <div className="relative group">
-              <button className="flex items-center gap-2 px-6 py-3 bg-gray-50 rounded-full text-base font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-                <Filter size={18} />
+              <button className="flex items-center gap-2 px-5 py-2.5 glass-button rounded-xl text-sm font-medium">
+                <Filter size={16} />
                 Sort by
-                <ChevronDown size={16} />
+                <ChevronDown size={14} />
               </button>
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 hidden group-hover:block animate-fade-in z-50">
-                <button
-                  onClick={() => setSortBy("price-asc")}
-                  className={`w-full text-left px-6 py-3 text-base hover:bg-gray-50 ${sortBy === "price-asc" ? "font-bold text-black" : "text-gray-600"}`}
-                >
-                  Price: Low to High
-                </button>
-                <button
-                  onClick={() => setSortBy("price-desc")}
-                  className={`w-full text-left px-6 py-3 text-base hover:bg-gray-50 ${sortBy === "price-desc" ? "font-bold text-black" : "text-gray-600"}`}
-                >
-                  Price: High to Low
-                </button>
-                <button
-                  onClick={() => setSortBy("rating")}
-                  className={`w-full text-left px-6 py-3 text-base hover:bg-gray-50 ${sortBy === "rating" ? "font-bold text-black" : "text-gray-600"}`}
-                >
-                  Top Rated
-                </button>
+              <div className="absolute right-0 mt-2 w-56 glass-card-static rounded-xl py-2 hidden group-hover:block animate-fade-in z-50">
+                {[
+                  { value: "price-asc", label: "Price: Low to High" },
+                  { value: "price-desc", label: "Price: High to Low" },
+                  { value: "rating", label: "Top Rated" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSortBy(option.value as any)}
+                    className={`w-full text-left px-5 py-3 text-sm hover:bg-[var(--glass-bg)] transition-colors ${sortBy === option.value ? "text-[var(--primary)] font-semibold" : "text-[var(--foreground-muted)]"
+                      }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -334,12 +417,13 @@ export default function HomePage() {
       {/* Products Grid */}
       <main className="container-main py-12">
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-32">
-            <p className="text-gray-400 text-lg">No products found.</p>
+          <div className="glass-card-static p-16 text-center">
+            <Sparkles size={48} className="mx-auto text-[var(--foreground-muted)] mb-4" />
+            <p className="text-[var(--foreground-muted)] text-lg">No products found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
-            {filteredProducts.map((product) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product, index) => {
               const productImage = (product.images && product.images.length > 0)
                 ? product.images[0]
                 : product.image || null;
@@ -347,60 +431,74 @@ export default function HomePage() {
               return (
                 <div
                   key={product._id}
-                  className="group cursor-pointer"
+                  className="product-card-modern cursor-pointer group stagger-children"
+                  style={{ animationDelay: `${index * 0.05}s` }}
                   onClick={() => router.push(`/product/${product._id}`)}
                 >
                   {/* Image Container */}
-                  <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-4">
+                  <div className="product-image-container-modern">
                     {productImage ? (
                       <img
                         src={productImage}
                         alt={product.nom}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="product-image-modern"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                      <div className="w-full h-full flex items-center justify-center text-[var(--foreground-muted)]">
                         No Image
                       </div>
                     )}
 
-                    {/* Quick Add Button (Desktop) */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(product);
-                      }}
-                      className="absolute bottom-4 right-4 bg-white text-black p-3 shadow-lg translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black hover:text-white"
-                    >
-                      <Plus size={20} />
-                    </button>
+                    {/* Overlay */}
+                    <div className="product-overlay">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(product);
+                        }}
+                        className="btn-gradient w-full py-3 text-sm"
+                      >
+                        <Plus size={16} />
+                        Add to Cart
+                      </button>
+                    </div>
 
                     {/* Favorite Button */}
                     <button
-                      type="button"
-                      className="absolute top-4 right-4 text-white drop-shadow-md hover:scale-110 transition-transform"
+                      className={`absolute top-4 right-4 p-2 rounded-xl transition-all ${isFavorite(product._id)
+                        ? "bg-[var(--pink)] text-white"
+                        : "glass-button text-white hover:bg-[var(--pink)]"
+                        }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(product);
                       }}
                     >
-                      <Heart
-                        size={24}
-                        className={isFavorite(product._id) ? "fill-white" : ""}
-                        strokeWidth={1.5}
-                      />
+                      <Heart size={18} className={isFavorite(product._id) ? "fill-white" : ""} />
                     </button>
+
+                    {/* Rating Badge */}
+                    {product.score_moyen > 0 && (
+                      <div className="absolute top-4 left-4 flex items-center gap-1 px-2 py-1 glass-button rounded-lg text-xs">
+                        <Star size={12} className="fill-[var(--warning)] text-[var(--warning)]" />
+                        <span className="font-medium">{product.score_moyen.toFixed(1)}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Info */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-sm font-medium text-gray-900 group-hover:underline underline-offset-4 decoration-gray-400">
+                  {/* Product Info */}
+                  <div className="p-5">
+                    <div className="flex justify-between items-start gap-2 mb-2">
+                      <h3 className="font-heading font-semibold text-white group-hover:text-[var(--primary)] transition-colors line-clamp-1">
                         {product.nom}
                       </h3>
-                      <span className="text-sm font-semibold">{product.prix.toFixed(2)} DT</span>
+                      <span className="text-lg font-bold text-gradient whitespace-nowrap">
+                        {product.prix.toFixed(2)} DT
+                      </span>
                     </div>
-                    <p className="text-xs text-gray-500 line-clamp-1">{product.description}</p>
+                    <p className="text-sm text-[var(--foreground-muted)] line-clamp-2">
+                      {product.description}
+                    </p>
                   </div>
                 </div>
               );
@@ -409,52 +507,68 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* Minimalist Cart Sidebar */}
+      {/* Cart Sidebar */}
       {isCartOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
             onClick={() => setIsCartOpen(false)}
           />
-          <aside className="fixed right-0 top-0 h-full w-full sm:w-[600px] bg-white z-50 shadow-2xl flex flex-col animate-slide-in">
-            <header className="p-8 flex items-center justify-between border-b border-gray-100">
-              <h2 className="text-2xl font-serif font-bold">Cart ({cartCount})</h2>
-              <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <aside className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-[var(--background)]/95 backdrop-blur-xl z-50 flex flex-col animate-slide-in border-l border-[var(--glass-border)]">
+            <header className="p-6 flex items-center justify-between border-b border-[var(--glass-border)]">
+              <h2 className="text-2xl font-heading font-bold text-white">
+                Cart <span className="text-[var(--primary)]">({cartCount})</span>
+              </h2>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-2 hover:bg-[var(--glass-bg)] rounded-xl transition-colors"
+              >
                 <X size={24} />
               </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 overflow-y-auto p-6">
               {cartItems.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                  <ShoppingCart size={64} className="mb-4 opacity-20" />
+                <div className="h-full flex flex-col items-center justify-center text-[var(--foreground-muted)]">
+                  <ShoppingCart size={64} className="mb-4 opacity-30" />
                   <p className="text-lg">Your cart is empty</p>
                 </div>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {cartItems.map((item) => (
-                    <div key={item.produitId} className="flex gap-6">
-                      <div className="w-24 h-32 bg-gray-100 flex-shrink-0 overflow-hidden">
+                    <div key={item.produitId} className="glass-card-static p-4 flex gap-4">
+                      <div className="w-20 h-24 bg-[var(--background-secondary)] rounded-lg flex-shrink-0 overflow-hidden">
                         {item.image && (
                           <img src={item.image} alt={item.nom} className="w-full h-full object-cover" />
                         )}
                       </div>
-                      <div className="flex-1 flex flex-col justify-between py-1">
+                      <div className="flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start">
-                            <h4 className="font-medium text-lg">{item.nom}</h4>
-                            <button onClick={() => removeFromCart(item.produitId)} className="text-gray-400 hover:text-black">
-                              <X size={20} />
+                            <h4 className="font-medium text-white">{item.nom}</h4>
+                            <button
+                              onClick={() => removeFromCart(item.produitId)}
+                              className="text-[var(--foreground-muted)] hover:text-[var(--error)] transition-colors"
+                            >
+                              <X size={18} />
                             </button>
                           </div>
-                          <p className="text-base text-gray-500 mt-1">{item.prix.toFixed(2)} DT</p>
+                          <p className="text-sm text-[var(--primary)]">{item.prix.toFixed(2)} DT</p>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center border border-gray-200">
-                            <button onClick={() => updateQuantity(item.produitId, -1)} className="p-2 hover:bg-gray-50"><Minus size={16} /></button>
-                            <span className="w-10 text-center text-sm font-medium">{item.quantite}</span>
-                            <button onClick={() => updateQuantity(item.produitId, 1)} className="p-2 hover:bg-gray-50"><Plus size={16} /></button>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateQuantity(item.produitId, -1)}
+                            className="p-2 glass-button rounded-lg hover:bg-[var(--glass-bg-hover)]"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="w-10 text-center text-sm font-medium">{item.quantite}</span>
+                          <button
+                            onClick={() => updateQuantity(item.produitId, 1)}
+                            className="p-2 glass-button rounded-lg hover:bg-[var(--glass-bg-hover)]"
+                          >
+                            <Plus size={14} />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -463,30 +577,32 @@ export default function HomePage() {
               )}
 
               {cartItems.length > 0 && (
-                <div className="mt-12 space-y-8">
-                  <h3 className="font-serif font-bold text-xl border-b border-gray-100 pb-4">Delivery Details</h3>
-                  <div className="space-y-6">
+                <div className="mt-8 space-y-6">
+                  <h3 className="font-heading font-bold text-lg text-white border-b border-[var(--glass-border)] pb-3">
+                    Delivery Details
+                  </h3>
+                  <div className="space-y-4">
                     <input
                       type="text"
                       placeholder="Address"
                       value={deliveryInfo.rue}
                       onChange={(e) => setDeliveryInfo({ ...deliveryInfo, rue: e.target.value })}
-                      className={getInputClasses(deliveryFieldError(deliveryInfo.rue))}
+                      className={`glass-input w-full ${deliveryFieldError(deliveryInfo.rue) ? "border-[var(--error)]" : ""}`}
                     />
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-4">
                       <input
                         type="text"
                         placeholder="City"
                         value={deliveryInfo.ville}
                         onChange={(e) => setDeliveryInfo({ ...deliveryInfo, ville: e.target.value })}
-                        className={getInputClasses(deliveryFieldError(deliveryInfo.ville))}
+                        className={`glass-input w-full ${deliveryFieldError(deliveryInfo.ville) ? "border-[var(--error)]" : ""}`}
                       />
                       <input
                         type="text"
                         placeholder="Postal Code"
                         value={deliveryInfo.codePostal}
                         onChange={(e) => setDeliveryInfo({ ...deliveryInfo, codePostal: e.target.value })}
-                        className={getInputClasses(deliveryFieldError(deliveryInfo.codePostal))}
+                        className={`glass-input w-full ${deliveryFieldError(deliveryInfo.codePostal) ? "border-[var(--error)]" : ""}`}
                       />
                     </div>
                     <input
@@ -494,14 +610,14 @@ export default function HomePage() {
                       placeholder="Phone"
                       value={deliveryInfo.telephone}
                       onChange={(e) => setDeliveryInfo({ ...deliveryInfo, telephone: e.target.value })}
-                      className={getInputClasses(deliveryFieldError(deliveryInfo.telephone))}
+                      className={`glass-input w-full ${deliveryFieldError(deliveryInfo.telephone) ? "border-[var(--error)]" : ""}`}
                     />
                     <textarea
                       placeholder="Delivery Note (optional)"
                       value={commentaire}
                       onChange={(e) => setCommentaire(e.target.value)}
-                      className="w-full border-b p-4 text-base bg-transparent placeholder:text-gray-400 focus:outline-none focus:border-black transition border-gray-200 resize-none"
-                      rows={3}
+                      className="glass-input w-full resize-none"
+                      rows={2}
                     />
                   </div>
                 </div>
@@ -509,24 +625,34 @@ export default function HomePage() {
             </div>
 
             {cartItems.length > 0 && (
-              <div className="p-8 border-t border-gray-100 bg-gray-50">
-                <div className="flex justify-between items-center mb-6">
-                  <span className="text-lg font-medium text-gray-600">Total</span>
-                  <span className="text-2xl font-bold">{cartTotal.toFixed(2)} DT</span>
+              <div className="p-6 border-t border-[var(--glass-border)] bg-[var(--background-secondary)]">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[var(--foreground-muted)]">Total</span>
+                  <span className="text-2xl font-bold text-gradient">{cartTotal.toFixed(2)} DT</span>
                 </div>
 
                 {feedback && (
-                  <p className={`text-sm mb-6 p-3 ${feedback.type === "error" ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"}`}>
+                  <div className={`p-3 rounded-lg mb-4 text-sm ${feedback.type === "error"
+                    ? "bg-[var(--error)]/20 text-[var(--error)] border border-[var(--error)]/30"
+                    : "bg-[var(--success)]/20 text-[var(--success)] border border-[var(--success)]/30"
+                    }`}>
                     {feedback.message}
-                  </p>
+                  </div>
                 )}
 
                 <button
                   onClick={handleCheckout}
                   disabled={isSubmitting}
-                  className="w-full bg-black text-white py-5 text-base font-bold uppercase tracking-widest hover:bg-gray-900 transition-colors disabled:opacity-50"
+                  className="btn-gradient w-full py-4 text-base disabled:opacity-50"
                 >
-                  {isSubmitting ? "Processing..." : "Checkout"}
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    "Checkout"
+                  )}
                 </button>
               </div>
             )}

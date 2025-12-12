@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn, Mail, Lock, AlertCircle } from "lucide-react";
+import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -47,76 +48,133 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-12">
-          <Link href="/" className="text-2xl font-serif font-bold tracking-tight text-black">
-            FreshFits
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Content */}
+      <div className="w-full max-w-md relative z-10 animate-fade-in">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <Link href="/" className="inline-block group">
+            <h1 className="text-4xl font-display text-gradient tracking-wider">
+              FRESHFITS
+            </h1>
+            <div className="h-1 w-0 group-hover:w-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] transition-all duration-300 mt-2 mx-auto rounded-full"></div>
           </Link>
         </div>
 
-        <div className="space-y-8">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-medium uppercase tracking-wider">Connexion</h1>
-            <p className="text-sm text-gray-500">Accédez à votre espace personnel</p>
+        {/* Glass Card */}
+        <div className="glass-card-static p-8 md:p-10">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-heading font-bold text-white mb-2">Welcome Back</h2>
+            <p className="text-[var(--foreground-muted)] text-sm">
+              Sign in to access your account
+            </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-gray-500">
+            {/* Email Input */}
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
                 Email
               </label>
-              <input
-                type="email"
-                placeholder="votre@email.com"
-                className="w-full border-b border-gray-300 py-3 text-sm focus:border-black focus:outline-none transition-colors bg-transparent placeholder:text-gray-300"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Mail
+                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${email ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  size={18}
+                />
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  className={`glass-input w-full transition-all duration-300 ${email ? 'pl-4' : 'pl-14'}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs uppercase tracking-wider text-gray-500">
-                Mot de passe
+            {/* Password Input */}
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wider text-[var(--foreground-muted)] font-medium">
+                Password
               </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="w-full border-b border-gray-300 py-3 text-sm focus:border-black focus:outline-none transition-colors bg-transparent placeholder:text-gray-300"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Lock
+                  className={`absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] transition-all duration-300 ${password ? 'opacity-0 scale-75' : 'opacity-100 scale-100'}`}
+                  size={18}
+                />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className={`glass-input w-full pr-12 transition-all duration-300 ${password ? 'pl-4' : 'pl-14'}`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
+            {/* Error Message */}
             {message && (
-              <div className="p-3 bg-gray-50 text-xs text-red-600 flex items-center gap-2">
-                <AlertCircle size={14} />
-                <span>{message}</span>
+              <div className="p-4 rounded-lg bg-[var(--error)]/20 border border-[var(--error)]/30 flex items-center gap-3 animate-fade-in">
+                <AlertCircle size={18} className="text-[var(--error)] flex-shrink-0" />
+                <span className="text-sm text-[var(--error)]">{message}</span>
               </div>
             )}
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black text-white py-4 text-sm font-medium uppercase tracking-wider hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-gradient w-full py-4 text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Connexion..." : "Se connecter"}
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <LogIn size={18} />
+                  Sign In
+                </span>
+              )}
             </button>
           </form>
 
+          {/* Divider */}
+          <div className="my-8 flex items-center gap-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[var(--glass-border)] to-transparent"></div>
+            <span className="text-xs text-[var(--foreground-muted)] uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[var(--glass-border)] to-transparent"></div>
+          </div>
+
+          {/* Register Link */}
           <div className="text-center">
-            <p className="text-sm text-gray-500">
-              Pas encore de compte ?{" "}
-              <Link href="/register" className="text-black underline underline-offset-4 hover:text-gray-600 transition-colors">
-                Créer un compte
+            <p className="text-[var(--foreground-muted)] text-sm">
+              Don't have an account?{" "}
+              <Link
+                href="/register"
+                className="text-[var(--primary)] hover:text-[var(--accent)] transition-colors font-medium"
+              >
+                Create one
               </Link>
             </p>
           </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center mt-8 text-xs text-[var(--foreground-muted)]">
+          ©2024 FreshFits. Premium Streetwear.
+        </p>
       </div>
     </div>
   );

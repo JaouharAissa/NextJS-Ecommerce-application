@@ -18,6 +18,7 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [role, setRole] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const syncAuthState = () => {
@@ -27,9 +28,17 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
       setRole(storedRole);
     };
 
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
     syncAuthState();
     window.addEventListener("storage", syncAuthState);
-    return () => window.removeEventListener("storage", syncAuthState);
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("storage", syncAuthState);
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -42,11 +51,14 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled
+        ? "bg-[var(--background)]/90 backdrop-blur-xl border-b border-[var(--glass-border)]"
+        : "bg-transparent"
+      }`}>
       <div className="container-main h-20 flex items-center justify-between gap-8">
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 -ml-2 text-black hover:bg-gray-100 rounded-full transition-colors"
+          className="md:hidden p-2 -ml-2 text-white hover:bg-[var(--glass-bg)] rounded-xl transition-colors"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Menu"
         >
@@ -55,48 +67,49 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-          <span className="text-2xl font-serif font-bold tracking-tight text-black group-hover:opacity-80 transition-opacity">
-            FreshFits
+          <span className="text-2xl font-display text-gradient tracking-wider">
+            FRESHFITS
           </span>
         </Link>
 
         {/* Search Bar (Centered) */}
         {onSearch && (
           <div className="hidden md:flex flex-1 max-w-md mx-auto relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
             <input
               type="text"
               placeholder="Search products..."
-              className="w-full pl-12 pr-4 py-2.5 bg-gray-100 border-none rounded-full focus:ring-1 focus:ring-black placeholder:text-gray-400 text-sm transition-all hover:bg-gray-200 focus:bg-white"
+              className="w-full pl-12 pr-4 py-3 glass-input rounded-full text-sm"
               value={searchValue || ""}
               onChange={(e) => onSearch(e.target.value)}
             />
           </div>
         )}
 
-        {/* Desktop Navigation (Optional) */}
+        {/* Desktop Navigation */}
         {links.length > 0 && (
           <div className="hidden md:flex items-center gap-8">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-gray-600 hover:text-black transition-colors uppercase tracking-wider relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:w-0 after:h-[1px] after:bg-black after:transition-all hover:after:w-full"
+                className="text-sm font-medium text-[var(--foreground-muted)] hover:text-white transition-colors uppercase tracking-wider relative group"
               >
                 {link.name}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] group-hover:w-full transition-all duration-300"></span>
               </Link>
             ))}
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {isAuthenticated && (
             <>
               {/* Favorites */}
               <Link
                 href="/favorites"
-                className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                className="p-3 text-[var(--foreground-muted)] hover:text-[var(--pink)] hover:bg-[var(--glass-bg)] rounded-xl transition-all"
                 title="Favorites"
               >
                 <Heart size={20} />
@@ -105,12 +118,12 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
               {/* Cart */}
               <button
                 onClick={onCartClick}
-                className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-all relative"
+                className="p-3 text-[var(--foreground-muted)] hover:text-[var(--primary)] hover:bg-[var(--glass-bg)] rounded-xl transition-all relative"
                 title="Cart"
               >
                 <ShoppingBag size={20} />
                 {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                  <span className="absolute top-1 right-1 w-5 h-5 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white text-[10px] font-bold flex items-center justify-center rounded-full animate-pulse">
                     {cartCount}
                   </span>
                 )}
@@ -119,7 +132,7 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
               {role === "admin" && (
                 <Link
                   href="/dashboard"
-                  className="hidden md:block px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-wider rounded-full hover:bg-gray-800 transition-colors"
+                  className="hidden md:flex items-center gap-2 px-4 py-2 btn-gradient text-xs"
                 >
                   Admin
                 </Link>
@@ -128,7 +141,7 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="hidden md:block p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                className="hidden md:block p-3 text-[var(--foreground-muted)] hover:text-[var(--error)] hover:bg-[var(--error)]/10 rounded-xl transition-all"
                 title="Logout"
               >
                 <LogOut size={20} />
@@ -139,7 +152,7 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
           {!isAuthenticated && (
             <Link
               href="/login"
-              className="px-6 py-2 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-all hover:shadow-lg"
+              className="btn-gradient px-6 py-2 text-sm"
             >
               Login
             </Link>
@@ -149,16 +162,16 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 top-20 z-40 bg-white md:hidden animate-fade-in border-t border-gray-100">
+        <div className="fixed inset-0 top-20 z-40 bg-[var(--background)]/95 backdrop-blur-xl md:hidden animate-fade-in">
           <div className="flex flex-col p-6 space-y-6">
             {/* Mobile Search */}
             {onSearch && (
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" size={18} />
                 <input
                   type="text"
                   placeholder="Search products..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-100 border-none rounded-full focus:ring-1 focus:ring-black placeholder:text-gray-400 text-sm"
+                  className="w-full pl-12 pr-4 py-4 glass-input rounded-xl text-sm"
                   value={searchValue || ""}
                   onChange={(e) => onSearch(e.target.value)}
                 />
@@ -169,32 +182,52 @@ export default function Navbar({ links = [], onSearch, searchValue, cartCount = 
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-2xl font-serif font-medium text-black"
+                className="text-2xl font-heading font-bold text-white hover:text-gradient transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 {link.name}
               </Link>
             ))}
-            <hr className="border-gray-100" />
+
+            <hr className="border-[var(--glass-border)]" />
+
             {isAuthenticated ? (
               <>
-                <Link href="/favorites" className="flex items-center gap-3 text-lg text-gray-600" onClick={() => setIsOpen(false)}>
-                  <Heart size={20} /> Favorites
+                <Link
+                  href="/favorites"
+                  className="flex items-center gap-4 text-lg text-[var(--foreground-muted)] hover:text-white transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Heart size={24} /> Favorites
                 </Link>
-                <button onClick={() => { onCartClick?.(); setIsOpen(false); }} className="flex items-center gap-3 text-lg text-gray-600">
-                  <ShoppingBag size={20} /> Cart ({cartCount})
+                <button
+                  onClick={() => { onCartClick?.(); setIsOpen(false); }}
+                  className="flex items-center gap-4 text-lg text-[var(--foreground-muted)] hover:text-white transition-colors"
+                >
+                  <ShoppingBag size={24} /> Cart ({cartCount})
                 </button>
                 {role === "admin" && (
-                  <Link href="/dashboard" className="flex items-center gap-3 text-lg text-gray-600" onClick={() => setIsOpen(false)}>
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-4 text-lg text-[var(--primary)]"
+                    onClick={() => setIsOpen(false)}
+                  >
                     Admin Dashboard
                   </Link>
                 )}
-                <button onClick={handleLogout} className="flex items-center gap-3 text-lg text-red-500 font-medium">
-                  <LogOut size={20} /> Logout
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-4 text-lg text-[var(--error)] font-medium"
+                >
+                  <LogOut size={24} /> Logout
                 </button>
               </>
             ) : (
-              <Link href="/login" className="text-lg font-medium text-black" onClick={() => setIsOpen(false)}>
+              <Link
+                href="/login"
+                className="btn-gradient w-full py-4 text-center"
+                onClick={() => setIsOpen(false)}
+              >
                 Login
               </Link>
             )}
