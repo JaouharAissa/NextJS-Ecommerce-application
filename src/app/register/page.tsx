@@ -40,6 +40,7 @@ export default function RegisterPage() {
     if (!/[A-Z]/.test(value)) return "Must contain at least one uppercase letter";
     if (!/[a-z]/.test(value)) return "Must contain at least one lowercase letter";
     if (!/[0-9]/.test(value)) return "Must contain at least one number";
+    if (!/[\W_]/.test(value)) return "Must contain at least one special character";
     return "";
   };
 

@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+
 // models/User.ts
 import mongoose, { Document, Schema } from "mongoose";
 
@@ -20,6 +22,7 @@ export interface IUser extends Document {
     favorites: mongoose.Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
+    comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 // Schéma pour les items du panier
@@ -86,6 +89,24 @@ const UserSchema = new Schema<IUser>(
     },
     { timestamps: true }
 );
+
+// Pre-save hook pour hasher le mot de passe
+UserSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        return next(error as Error);
+    }
+});
+
+// Méthode pour comparer les mots de passe
+UserSchema.methods.comparePassword = async function (candidatePassword: string) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
 
 // Index pour optimiser les recherches
 UserSchema.index({ email: 1 });
